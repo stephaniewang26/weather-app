@@ -190,10 +190,110 @@ Class models should contain an initialize_table() method to ensure that a table 
 Each method in a class model should open, then close a connection to the database to perform the various CRUD operations.
 
 ## LLM Instructions
-In the models folder, I have a User_Model.py file and an Admin_Model.py file. These files are attached.
+This is a simplified version of my file structure:
+weather-app/
+    backend/
+        controllers/
+        data/
+            database.db
+        models/
+            Admin_Model.py
+            User_Model.py
+        tests/
+            sample_admin_data.py
+            sample_user_data.py
+            test_admin_model.py
+            test_user_model.py
+    frontend/
+        .expo/
+        app/
+            index.jsx
+        assets/
+        app.json
+        package.json
 
-There is a /tests folder to organize unit tests written using pytest. There are two test files, test_admin_model.py and test_user_model.py. These are robust collections of unit tests to verify the functionality included in Admin_Model.py and User_Model.py.
+The /tests folder organizes unit tests written using pytest. The test files are robust collections of unit tests to verify the functionality included in Admin_Model.py and User_Model.py.
 
-Create the controller .py files for each entity in a folder called /controllers. The controller files only need core methods for now.
+Create the controller .py files for each entity in /controllers. The controller files only need core methods for now. 
 
-Create views connected to the controller routes for each entity. These should be written in React Native.
+Create views connected to the controller routes for each entity. These should be written in React Native. I want to use the Expo Router.
+- Login view
+- Home view
+I do not have custom components or a components folder. Only use React Native components for now.
+
+# Prompt 5
+## Problem Statement
+Sometimes, it's hard to know what to wear based on the weather. Regardless of one's age, most people experience this inconvenience at least a few times a month. Generally, this issue does not occur because people don't check the weather; instead, the temperature shown on the weather app often doesn't reflect how it truly feels outside, especially during transitional seasons. This may be due to winds, humidity, precipitation, and other factors that aren't as readily available for interpretation as the "degrees."
+
+[NAME] solves both of these issues by offering a visual recommendation of what to wear for the day, taking both weather factors and user preferences into account. By making the influence of different weather factors accessible and easy-to-understand, [NAME] will provide a way to translate between numbers on a screen and what it actually feels like outside.
+
+## Core Features
+An accurate “feels like” temperature that’s displayed by default
+Low and high temperatures for the day
+A visual recommendation of what to wear for the day, or what to bring (umbrella, boots, coat etc) based on user preferences (I get cold easily, I get hot easily)
+Hourly weather view
+Day-by-day weather view for the week
+Conditions for the day (wind speeds, UV index, humidity, air quality, amount of pollen) with a very brief text description of what the numbers actually mean
+Google OAuth
+
+## Architecture
+Weather App is a client-server application written in React Native.
+The backend uses Python Flask. 
+The app uses a SQL database.
+The app uses a reliable weather API. 
+I want to be able to publish it to the App Store and the Google Play Store eventually.
+The server uses an MVC architecture.
+
+## LLM Instructions
+Create a walking skeleton of this project.
+A walking skeleton connects together all the important pieces of a project without worrying about implementing the specific logic behind your application.
+
+Your walking skeleton should include:
+- Models for each entity
+- Unit tests for each model method
+- Controllers for each entity
+- Views connected to controller routes for each entity
+- End-to-end tests to verify frontend-backend connections
+
+## Data Storage
+A locally-stored db file is used to store information related to each entity.
+The database contains multiple tables to store data.
+The db is organized in a top-level project folder called /data
+
+## Entity Design
+Class models should contain an initialize_table() method to ensure that a table exists in the db for the entity.
+Each method in a class model should open, then close a connection to the database to perform the various CRUD operations.
+
+## LLM Instructions
+This is a simplified version of my file structure:
+weather-app/
+    backend/
+        controllers/
+            Admin_Controller.py
+            User_Controller.py
+        data/
+            database.db
+        models/
+            Admin_Model.py
+            User_Model.py
+        tests/
+            sample_admin_data.py
+            sample_user_data.py
+            test_admin_model.py
+            test_user_model.py
+        server.py
+    frontend/
+        .expo/
+        app/
+            index.jsx
+            login.jsx
+        assets/
+        app.json
+        package.json
+
+The server.py file is attached. It acts as a router for the backend.
+
+Create views connected to the controller routes for each entity. These should be written in React Native. I want to use the Expo Router.
+- Login view
+- Home view
+I do not have custom components or a components folder. Only use React Native components for now.
