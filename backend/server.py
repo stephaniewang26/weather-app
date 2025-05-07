@@ -1,60 +1,60 @@
 from flask import Flask, jsonify
 from flask_cors import CORS  # Import CORS
-from controllers.User_Controller import UserController
-from controllers.Admin_Controller import AdminController
+# from controllers.User_Controller import UserController
+# from controllers.Admin_Controller import AdminController
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Initialize controllers
-user_controller = UserController()
-admin_controller = AdminController()
+# # Initialize controllers
+# user_controller = UserController()
+# admin_controller = AdminController()
 
-# --- User Routes ---
-@app.route('/users', methods=['POST'])
-def create_user():
-    return user_controller.create_user()
+# # --- User Routes ---
+# @app.route('/users', methods=['POST'])
+# def create_user():
+#     return user_controller.create_user()
 
-@app.route('/users/<int:user_id>', methods=['GET'])
-def get_user(user_id):
-    return user_controller.get_user(user_id)
+# @app.route('/users/<int:user_id>', methods=['GET'])
+# def get_user(user_id):
+#     return user_controller.get_user(user_id)
 
-@app.route('/users/<int:user_id>', methods=['PUT'])
-def update_user(user_id):
-    return user_controller.update_user(user_id)
+# @app.route('/users/<int:user_id>', methods=['PUT'])
+# def update_user(user_id):
+#     return user_controller.update_user(user_id)
 
-@app.route('/users/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    return user_controller.delete_user(user_id)
+# @app.route('/users/<int:user_id>', methods=['DELETE'])
+# def delete_user(user_id):
+#     return user_controller.delete_user(user_id)
 
-@app.route('/users', methods=['GET'])
-def get_all_users():
-    return user_controller.get_all_users()
+# @app.route('/users', methods=['GET'])
+# def get_all_users():
+#     return user_controller.get_all_users()
 
-@app.route('/login', methods=['POST'])
-def login_user():
-    return user_controller.login_user()
+# @app.route('/login', methods=['POST'])
+# def login_user():
+#     return user_controller.login_user()
 
-# --- Admin Routes ---
-@app.route('/admins', methods=['POST'])
-def create_admin():
-    return admin_controller.create_admin()
+# # --- Admin Routes ---
+# @app.route('/admins', methods=['POST'])
+# def create_admin():
+#     return admin_controller.create_admin()
 
-@app.route('/admins/<int:admin_id>', methods=['GET'])
-def get_admin(admin_id):
-    return admin_controller.get_admin(admin_id)
+# @app.route('/admins/<int:admin_id>', methods=['GET'])
+# def get_admin(admin_id):
+#     return admin_controller.get_admin(admin_id)
 
-@app.route('/admins/<int:admin_id>', methods=['PUT'])
-def update_admin(admin_id):
-    return admin_controller.update_admin(admin_id)
+# @app.route('/admins/<int:admin_id>', methods=['PUT'])
+# def update_admin(admin_id):
+#     return admin_controller.update_admin(admin_id)
 
-@app.route('/admins/<int:admin_id>', methods=['DELETE'])
-def delete_admin(admin_id):
-    return admin_controller.delete_admin(admin_id)
+# @app.route('/admins/<int:admin_id>', methods=['DELETE'])
+# def delete_admin(admin_id):
+#     return admin_controller.delete_admin(admin_id)
 
-@app.route('/admins', methods=['GET'])
-def get_all_admins():
-    return admin_controller.get_all_admins()
+# @app.route('/admins', methods=['GET'])
+# def get_all_admins():
+#     return admin_controller.get_all_admins()
 
 # --- Weather Data Route (Example) ---
 @app.route('/weather', methods=['GET'])
@@ -98,4 +98,3 @@ def get_weather():
 
 if __name__ == '__main__':
     app.run(debug=True, host="192.168.0.135")
-
