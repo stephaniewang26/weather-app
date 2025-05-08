@@ -79,7 +79,7 @@ class User:
             if email != None:
                 email_results = cursor.execute(f'''
                     SELECT * FROM {self.table_name}
-                    WHERE username = '{email}';
+                    WHERE email = '{email}';
                 ''')
                 email_results = email_results.fetchall()
 
@@ -141,6 +141,89 @@ class User:
         finally:
             db_connection.close()
 
+    def get_all(self): 
+        try: 
+            db_connection = sqlite3.connect(self.db_name)
+            cursor = db_connection.cursor()
+            all_users_query = cursor.execute(f'''SELECT * FROM {self.table_name};''')
+            all_users = all_users_query.fetchall()
+
+            all_users_list = []
+            for user_tup in all_users:
+                all_users_list.append(self.to_dict(user_tup))
+            
+            return {"status":"success",
+                        "data":all_users_list}
+        except sqlite3.Error as error:
+            return {"status":"error",
+                    "data":error}
+        finally:
+            db_connection.close()
+
+    def update(self, user_info): 
+        try: 
+            db_connection = sqlite3.connect(self.db_name)
+            cursor = db_connection.cursor()
+            all_ids_query = cursor.execute(f'''SELECT id FROM {self.table_name};''')
+            all_ids = all_ids_query.fetchall()
+            #print(all_ids)
+            #check if id exists
+            if (user_info["id"],) not in all_ids:
+                return {"status":"error",
+                        "data":"Id does not exist!"}
+            #if id does exist
+            else:
+                #check if username and email are unique and if username/email/password are correctly formatted
+                existing_emails_query = cursor.execute(f'''SELECT email FROM {self.table_name};''')
+                existing_emails = existing_emails_query.fetchall()
+
+                original_user_query = cursor.execute(f'''SELECT * FROM {self.table_name} WHERE id = {user_info["id"]};''')
+                original_user = original_user_query.fetchone()
+
+                #email
+                #if the email doesn't match the current email and is present in the db
+                if (user_info["email"],) in existing_emails and user_info["email"] != original_user[1]:
+                    return {"status":"error",
+                            "data": "Email address already exists!"}
+                elif "@" not in user_info["email"]:
+                    return {"status":"error",
+                            "data": "Email address should contain @ character."}
+                elif "." not in user_info["email"]:
+                    return {"status":"error",
+                            "data": "Email address should contain . character."}
+                elif " " in user_info["email"]:
+                    return {"status":"error",
+                            "data": "Email address should not contain any spaces."}
+                #name
+                #if the name doesn't match the current name FIX THIS!!
+                elif user_info["username"].isalnum() == False:
+                    for character in user_info["username"]:
+                        if character != "-" and character != "_" and character.isalnum() == False:
+                            return {"status":"error",
+                                    "data":"Username contains forbidden characters!"}
+                
+                #update id's info
+                else:
+                    cursor.execute(f'''
+                    UPDATE {self.table_name}
+                    SET email = '{user_info["email"]}',
+                    username = '{user_info["name"]}',
+                    WHERE id = {user_info["id"]};
+                    ''')
+                    db_connection.commit()
+
+                    updated_user_query = cursor.execute(f'''SELECT * FROM {self.table_name}
+                                                            WHERE id = {user_info["id"]};''')
+                    updated_user = updated_user_query.fetchall()
+                    return {"status":"success",
+                        "data":self.to_dict(updated_user[0])}
+            
+        except sqlite3.Error as error:
+            return {"status":"error",
+                    "data":error}
+        finally:
+            db_connection.close()
+
     def to_dict(self, user_tuple):
         '''Utility function which converts the tuple returned from a SQLlite3 database
            into a dictionary
@@ -156,135 +239,6 @@ class User:
 
     #remake the user model stuff lol
 #     ------
-    
-#     def get(self, username=None, id=None):
-#         try: 
-#             db_connection = sqlite3.connect(self.db_name)
-#             cursor = db_connection.cursor()
-#             if username != None:
-#                 specific_user_query = cursor.execute(f'''
-#                                                     SELECT * FROM {self.table_name} 
-#                                                     WHERE username = '{username}';''')
-#                 specific_user = specific_user_query.fetchall()
-#                 if specific_user != []:
-#                     return {"status":"success",
-#                     "data":self.to_dict(specific_user[0])}
-#                 else:
-#                     return {"status":"error",
-#                     "data":"User does not exist!"}
-#             elif id != None:
-#                 specific_user_query = cursor.execute(f'''
-#                                                     SELECT * FROM {self.table_name} 
-#                                                     WHERE id = {id};''')
-#                 specific_user = specific_user_query.fetchall()
-#                 if specific_user != []:
-#                     return {"status":"success",
-#                     "data":self.to_dict(specific_user[0])}
-#                 else:
-#                     return {"status":"error",
-#                     "data":"User does not exist!"}
-#             else:
-#                 return {"status":"error",
-#                     "data":"No username or id entered!"}
-
-#         except sqlite3.Error as error:
-#             return {"status":"error",
-#                     "data":error}
-#         finally:
-#             db_connection.close()
-    
-#     def get_all(self): 
-#         try: 
-#             db_connection = sqlite3.connect(self.db_name)
-#             cursor = db_connection.cursor()
-#             all_users_query = cursor.execute(f'''SELECT * FROM {self.table_name};''')
-#             all_users = all_users_query.fetchall()
-
-#             all_users_list = []
-#             for user_tup in all_users:
-#                 all_users_list.append(self.to_dict(user_tup))
-            
-#             return {"status":"success",
-#                         "data":all_users_list}
-#         except sqlite3.Error as error:
-#             return {"status":"error",
-#                     "data":error}
-#         finally:
-#             db_connection.close()
-
-#     def update(self, user_info): 
-#         try: 
-#             db_connection = sqlite3.connect(self.db_name)
-#             cursor = db_connection.cursor()
-#             all_ids_query = cursor.execute(f'''SELECT id FROM {self.table_name};''')
-#             all_ids = all_ids_query.fetchall()
-#             #print(all_ids)
-#             #check if id exists
-#             if (user_info["id"],) not in all_ids:
-#                 return {"status":"error",
-#                         "data":"Id does not exist!"}
-#             #if id does exist
-#             else:
-#                 #check if username and email are unique and if username/email/password are correctly formatted
-#                 existing_emails_query = cursor.execute(f'''SELECT email FROM {self.table_name};''')
-#                 existing_emails = existing_emails_query.fetchall()
-
-#                 original_user_query = cursor.execute(f'''SELECT * FROM {self.table_name} WHERE id = {user_info["id"]};''')
-#                 original_user = original_user_query.fetchone()
-
-#                 #email
-#                 #if the email doesn't match the current email and is present in the db
-#                 if (user_info["email"],) in existing_emails and user_info["email"] != original_user[1]:
-#                     return {"status":"error",
-#                             "data": "Email address already exists!"}
-#                 elif "@" not in user_info["email"]:
-#                     return {"status":"error",
-#                             "data": "Email address should contain @ character."}
-#                 elif "." not in user_info["email"]:
-#                     return {"status":"error",
-#                             "data": "Email address should contain . character."}
-#                 elif " " in user_info["email"]:
-#                     return {"status":"error",
-#                             "data": "Email address should not contain any spaces."}
-#                 #username
-#                 #if the username doesn't match the current username and already exists 
-#                 elif (self.exists(username=user_info["username"])["data"] == True) and user_info["username"] != original_user[2]:
-#                     return {"status":"error",
-#                             "data": "Username already exists!"}
-#                 elif user_info["username"].isalnum() == False:
-#                     for character in user_info["username"]:
-#                         if character != "-" and character != "_" and character.isalnum() == False:
-#                             return {"status":"error",
-#                                     "data":"Username contains forbidden characters!"}
-#                     # if "-" not in user_info["username"] and "_" not in user_info["username"]:
-#                     #     return {"status":"error",
-#                     #             "data":"Username contains forbidden characters!"}
-#                 #password
-#                 if len(user_info["password"]) < 8:
-#                     return {"status":"error",
-#                             "data":"Password is too short."}
-#                 #update id's info
-#                 else:
-#                     cursor.execute(f'''
-#                     UPDATE {self.table_name}
-#                     SET email = '{user_info["email"]}',
-#                     username = '{user_info["username"]}',
-#                     password = '{user_info["password"]}'
-#                     WHERE id = {user_info["id"]};
-#                     ''')
-#                     db_connection.commit()
-
-#                     updated_user_query = cursor.execute(f'''SELECT * FROM {self.table_name}
-#                                                             WHERE id = {user_info["id"]};''')
-#                     updated_user = updated_user_query.fetchall()
-#                     return {"status":"success",
-#                         "data":self.to_dict(updated_user[0])}
-            
-#         except sqlite3.Error as error:
-#             return {"status":"error",
-#                     "data":error}
-#         finally:
-#             db_connection.close()
 
 #     def remove(self, username): 
 #         try: 
@@ -311,7 +265,51 @@ class User:
 #         finally:
 #             db_connection.close()
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
+    SAMPLE_USERS = [
+        {
+            "name": "Alice Wonderland",
+            "email": "alice@example.com",
+            "preference_temperature": "gets_cold_easily", # Example: Gets cold easily
+            "google_oauth_token": "token_alice_123"      # Example: Has OAuth token
+        },
+        {
+            "name": "Bob The Builder",
+            "email": "bob@example.com",
+            "preference_temperature": "neutral",           # Example: Neutral preference
+            "google_oauth_token": None                     # Example: No OAuth token
+        },
+        {
+            "name": "Charlie Chaplin",
+            "email": "charlie@example.com",
+            "preference_temperature": "gets_hot_easily",  # Example: Gets hot easily
+            "google_oauth_token": "token_charlie_789"     # Example: Has OAuth token
+        },
+        {
+            "name": "Diana Prince",
+            "email": "diana@example.com",
+            "preference_temperature": "neutral",           # Example: Neutral preference
+            "google_oauth_token": "token_diana_456"      # Example: Has OAuth token
+        },
+        {
+            "name": "Ethan Hunt",
+            "email": "ethan@example.com",
+            "preference_temperature": "gets_cold_easily", # Example: Gets cold easily
+            "google_oauth_token": None                     # Example: No OAuth token
+        }
+    ]
+    user = User(db_name="database.db", table_name="users")
+    user.initialize_table()
+    user.create(SAMPLE_USERS[0])
+    result = user.exists(email=SAMPLE_USERS[0]["email"])
+    print(result)
+
+    for user_data in SAMPLE_USERS:
+        user.create(user_data)
+    for user_data in SAMPLE_USERS:
+        print(user.create(user_data))
+
+
 #     import os
 #     print("Current working directory:", os.getcwd())
 #     DB_location=f"{os.getcwd()}/Models/yahtzeeDB.db"

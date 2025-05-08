@@ -32,7 +32,25 @@ def valid_user_data():
         "google_oauth_token": "test_token_123",
     }
 
+@pytest.fixture
+def another_valid_user_data():
+    """Fixture to provide valid user data for testing."""
+    return {
+        "name": "Test User 2",
+        "email": "test2@example.com",
+        "preference_temperature": "neutral",
+        "google_oauth_token": "test2_token_123",
+    }
 
+@pytest.fixture
+def invalid_user_data_duplicate_email():
+    """Fixture to provide valid user data for testing."""
+    return {
+        "name": "Test User 3",
+        "email": "test@example.com",
+        "preference_temperature": "neutral",
+        "google_oauth_token": "test3_token_123",
+    }
 
 # --- Test Functions ---
 def test_initialize_table_creates_table(temp_database):
@@ -140,6 +158,12 @@ def test_create_multiple_users_unique_ids(user_model, valid_user_data, another_v
 
 def test_create_user_duplicate_email(user_model, invalid_user_data_duplicate_email):
     """Test that creating a user with a duplicate email fails."""
+    user_model.create({
+        "name": "Test User",
+        "email": "test@example.com",
+        "preference_temperature": "neutral",
+        "google_oauth_token": "test_token_123",
+    })
     result = user_model.create(invalid_user_data_duplicate_email)
     assert result["status"] == "error"
     assert "data" in result
@@ -307,9 +331,91 @@ def test_get_with_sample_data(user_model):
         user_by_email = user_model.get(email=user_data["email"])["data"]
         user_id_from_db = user_model.get(email=user_data["email"])["data"]["id"]
         user_by_id = user_model.get(id=user_id_from_db)["data"]
+
+        #get rid of the id from the user_by_email and user_by_id
+        del user_by_email['id']
+        del user_by_id['id']
+
         # compare the dictionaries
         assert user_by_email == user_data
         assert user_by_id == user_data
 
     assert user_model.get(email="nonexistent@example.com")["data"] == "User does not exist!"
     assert user_model.get(id=999999)["data"] == "User does not exist!"
+
+# --- Tests for get_all() ---
+def test_get_all_empty_table(user_model):
+    """Test get_all() returns an empty list when the table is empty."""
+    result = user_model.get_all()
+    assert result["status"] == "success"
+    assert result["data"] == []
+
+def test_get_all_single_user(user_model, valid_user_data):
+    """Test get_all() returns a list containing one user when there is only one user in the table."""
+    user_model.create(valid_user_data)
+    result = user_model.get_all()
+    assert result["status"] == "success"
+    assert isinstance(result["data"], list)
+    assert len(result["data"]) == 1
+    # Ensure the returned user data matches the created user data
+    expected_user = {
+        "id": result["data"][0]["id"],  # Use the generated ID
+        "name": valid_user_data["name"],
+        "email": valid_user_data["email"],
+        "preference_temperature": valid_user_data["preference_temperature"],
+        "google_oauth_token": valid_user_data["google_oauth_token"],
+    }
+    assert result["data"][0] == expected_user
+
+def test_get_all_multiple_users(user_model):
+    """Test get_all() returns a list containing all users when there are multiple users in the table."""
+    for user_data in SAMPLE_USERS:
+        user_model.create(user_data)
+    result = user_model.get_all()
+    assert result["status"] == "success"
+    assert isinstance(result["data"], list)
+    assert len(result["data"]) == len(SAMPLE_USERS)
+
+    # Verify that the returned data matches the SAMPLE_USERS data, order doesn't matter
+    expected_users = []
+    for user_dict in SAMPLE_USERS:
+        expected_user = user_dict.copy()
+        # find the user in result
+        found = False
+        for res_user in result["data"]:
+            if res_user["email"] == expected_user["email"]:
+                expected_user["id"] = res_user["id"] # set the correct id
+                expected_users.append(expected_user)
+                found = True
+                break
+        assert found == True
+    assert len(expected_users) == len(SAMPLE_USERS)
+    assert set(tuple(sorted(d.items())) for d in result["data"]) == set(tuple(sorted(d.items())) for d in expected_users)
+
+def test_get_all_user_data_integrity(user_model):
+    """Test that get_all() returns the correct user data for all users."""
+    # Create users from SAMPLE_USERS
+    for user_data in SAMPLE_USERS:
+        user_model.create(user_data)
+
+    result = user_model.get_all()
+
+    # Fetch user data directly from the database for comparison
+    conn = sqlite3.connect(user_model.db_name)
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {user_model.table_name};")
+    users_from_db = cursor.fetchall()
+    conn.close()
+
+    # Convert database results to a list of dictionaries
+    expected_users_from_db = [
+        {
+            "id": user[0],
+            "name": user[1],
+            "email": user[2],
+            "preference_temperature": user[3],
+            "google_oauth_token": user[4],
+        }
+        for user in users_from_db
+    ]
+    assert set(tuple(sorted(d.items())) for d in result["data"]) == set(tuple(sorted(d.items())) for d in expected_users_from_db)
