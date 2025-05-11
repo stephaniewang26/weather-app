@@ -1,7 +1,7 @@
 import pytest
 import sqlite3
 import os
-from models.User_Modelcopy import User  # Corrected import
+from models.User_Model import User  # Corrected import
 from sample_user_data import SAMPLE_USERS
 
 # --- Test Fixture ---
@@ -233,7 +233,6 @@ def test_exists_with_no_parameters(user_model):
     assert result["status"] == "success"
     assert result["data"] is False
 
-# --- Tests for get() ---
 def test_get_by_email_success(user_model):
     """Test get() returns the user data if a user with the given email exists."""
     created_user = user_model.create(SAMPLE_USERS[2])
@@ -419,3 +418,245 @@ def test_get_all_user_data_integrity(user_model):
         for user in users_from_db
     ]
     assert set(tuple(sorted(d.items())) for d in result["data"]) == set(tuple(sorted(d.items())) for d in expected_users_from_db)
+
+# --- Tests for update() ---
+def test_update_user_success(user_model, valid_user_data):
+    """Test that a user can be updated successfully with valid data."""
+    # 1. Create a user first
+    create_result = user_model.create(valid_user_data)
+    user_id = create_result["data"]["id"]
+
+    # 2. Modify the user data
+    updated_user_data = {
+        "id": user_id,
+        "name": "Updated User Name",
+        "email": "updated@example.com",
+    }
+
+    # 3. Update the user
+    update_result = user_model.update(updated_user_data)
+    assert update_result["status"] == "success"
+    assert "data" in update_result
+    assert isinstance(update_result["data"], dict)
+    assert update_result["data"]["id"] == user_id
+    assert update_result["data"]["name"] == "Updated User Name"
+    assert update_result["data"]["email"] == "updated@example.com"
+    #check other fields were not changed
+    assert update_result["data"]["preference_temperature"] == valid_user_data["preference_temperature"]
+    assert update_result["data"]["google_oauth_token"] == valid_user_data["google_oauth_token"]
+
+    # 4. Verify the update in the database
+    conn = sqlite3.connect(user_model.db_name)
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {user_model.table_name} WHERE id = ?;", (user_id,))
+    updated_user_from_db = cursor.fetchone()
+    conn.close()
+
+    assert updated_user_from_db is not None
+    assert updated_user_from_db[1] == "Updated User Name"
+    assert updated_user_from_db[2] == "updated@example.com"
+    assert updated_user_from_db[3] == valid_user_data["preference_temperature"]
+    assert updated_user_from_db[4] == valid_user_data["google_oauth_token"]
+
+
+def test_update_user_invalid_id(user_model, valid_user_data):
+    """Test that updating a user with an invalid ID returns an error."""
+    invalid_user_data = {
+        "id": 999999,  # An ID that is unlikely to exist
+        "name": "Updated User Name",
+        "email": "updated@example.com",
+    }
+    result = user_model.update(invalid_user_data)
+    assert result["status"] == "error"
+    assert "data" in result
+    assert result["data"] == "Id does not exist!"
+
+def test_update_user_duplicate_email(user_model, valid_user_data, another_valid_user_data):
+    """Test that updating a user with a duplicate email fails."""
+    # 1. Create two users
+    user1_result = user_model.create(valid_user_data)
+    user2_result = user_model.create(another_valid_user_data)
+    user1_id = user1_result["data"]["id"]
+    user2_id = user2_result["data"]["id"]
+
+    # 2. Attempt to update user1's email to user2's email
+    invalid_update_data = {
+        "id": user1_id,
+        "name": "Updated User Name",
+        "email": another_valid_user_data["email"],  # Duplicate email
+    }
+    result = user_model.update(invalid_update_data)
+    assert result["status"] == "error"
+    assert result["data"] == "Email address already exists!"
+
+    # 3. Verify that user1's email was not changed in the database
+    conn = sqlite3.connect(user_model.db_name)
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT email FROM {user_model.table_name} WHERE id = ?;", (user1_id,))
+    user1_email_from_db = cursor.fetchone()[0]
+    conn.close()
+    assert user1_email_from_db == valid_user_data["email"]  # Original email
+
+
+def test_update_user_invalid_email_format(user_model, valid_user_data):
+    """Test that updating a user with an invalid email format."""
+    # 1. Create a user.
+    created_user = user_model.create(valid_user_data)
+    user_id = created_user["data"]["id"]
+    invalid_email_formats = [
+        "invalid_email",
+        "invalid@email",
+        "invalid.email",
+        "invalid email@test.com",
+    ]
+
+    for invalid_email in invalid_email_formats:
+        # 2. Attempt to update the user's email with an invalid format
+        invalid_update_data = {
+            "id": user_id,
+            "name": "Updated Name",
+            "email": invalid_email,
+        }
+        result = user_model.update(invalid_update_data)
+        assert result["status"] == "error"
+        assert "data" in result
+        assert "Email address should contain @ character." in result["data"] or \
+               "Email address should contain . character." in result["data"] or \
+               "Email address should not contain any spaces." in result["data"]
+
+        # 3. Verify that the email was not changed
+        conn = sqlite3.connect(user_model.db_name)
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT email FROM {user_model.table_name} WHERE id = ?;", (user_id,))
+        email_from_db = cursor.fetchone()[0]
+        conn.close()
+        assert email_from_db == valid_user_data["email"]  # Original email
+
+def test_update_user_valid_email_format(user_model, valid_user_data):
+    """Test that updating a user with a valid email format."""
+    # 1. Create a user.
+    created_user = user_model.create(valid_user_data)
+    user_id = created_user["data"]["id"]
+    valid_email_format = "valid.email@test.com"
+    # 2. Attempt to update the user's email with a valid format
+    valid_update_data = {
+        "id": user_id,
+        "name": "Updated Name",
+        "email": valid_email_format,
+    }
+    result = user_model.update(valid_update_data)
+    assert result["status"] == "success"
+    assert "data" in result
+    assert result["data"]["email"] == valid_email_format
+
+    # 3. Verify that the email was changed
+    conn = sqlite3.connect(user_model.db_name)
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT email FROM {user_model.table_name} WHERE id = ?;", (user_id,))
+    email_from_db = cursor.fetchone()[0]
+    conn.close()
+    assert email_from_db == valid_email_format
+
+def test_update_user_name_change(user_model, valid_user_data):
+    """Test that updating a user's name changes only the name."""
+    # 1. Create a user
+    create_result = user_model.create(valid_user_data)
+    user_id = create_result["data"]["id"]
+    updated_name = "New Name"
+
+    # 2. Update only the name
+    updated_data = {"id": user_id, "name": updated_name, "email": valid_user_data["email"]}  # Include original email
+    result = user_model.update(updated_data)
+
+    # 3. Assert success and check the updated name
+    assert result["status"] == "success"
+    assert result["data"]["name"] == updated_name
+
+    # 4. Verify in the database
+    conn = sqlite3.connect(user_model.db_name)
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT name FROM {user_model.table_name} WHERE id = ?;", (user_id,))
+    name_from_db = cursor.fetchone()[0]
+    conn.close()
+    assert name_from_db == updated_name
+
+def test_update_user_email_change(user_model, valid_user_data):
+    """Test that updating a user's email changes only the email."""
+    # 1. Create a user
+    create_result = user_model.create(valid_user_data)
+    user_id = create_result["data"]["id"]
+    updated_email = "new_email@test.com"
+
+    # 2. Update only the email
+    updated_data = {"id": user_id, "email": updated_email, "name": valid_user_data["name"]}  # Include original name
+    result = user_model.update(updated_data)
+
+    # 3. Assert success and check the updated email
+    assert result["status"] == "success"
+    assert result["data"]["email"] == updated_email
+
+    # 4. Verify in the database
+    conn = sqlite3.connect(user_model.db_name)
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT email FROM {user_model.table_name} WHERE id = ?;", (user_id,))
+    email_from_db = cursor.fetchone()[0]
+    conn.close()
+    assert email_from_db == updated_email
+
+# --- Tests for remove() ---
+def test_remove_user_success(user_model, valid_user_data):
+    """Test that a user can be removed successfully by email."""
+    # 1. Create a user
+    create_result = user_model.create(valid_user_data)
+    user_email = valid_user_data["email"]
+
+    # 2. Remove the user
+    remove_result = user_model.remove(user_email)
+    assert remove_result["status"] == "success"
+    assert "data" in remove_result
+    assert remove_result["data"]["email"] == user_email
+
+    # 3. Verify that the user is removed from the database
+    conn = sqlite3.connect(user_model.db_name)
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {user_model.table_name} WHERE email = ?;", (user_email,))
+    user_from_db = cursor.fetchone()
+    conn.close()
+    assert user_from_db is None, "User was not removed from the database"
+
+
+def test_remove_user_not_exists(user_model):
+    """Test that removing a non-existent user returns an error."""
+    nonexistent_email = "nonexistent@example.com"
+    result = user_model.remove(nonexistent_email)
+    assert result["status"] == "error"
+    assert "data" in result
+    assert result["data"] == "User does not exist!", "Incorrect error message"
+
+
+def test_remove_only_removes_specified_user(user_model):
+    """Test that remove() only removes the specified user, leaving others intact."""
+    # 1. Create multiple users
+    for user_data in SAMPLE_USERS:
+        user_model.create(user_data)
+    email_to_remove = SAMPLE_USERS[2]["email"]  # Choose an email to remove
+
+    # 2. Remove one user
+    user_model.remove(email_to_remove)
+
+    # 3. Verify that the correct user is removed and others remain
+    conn = sqlite3.connect(user_model.db_name)
+    cursor = conn.cursor()
+
+    # Check if the removed user is still present
+    cursor.execute(f"SELECT * FROM {user_model.table_name} WHERE email = ?;", (email_to_remove,))
+    removed_user_from_db = cursor.fetchone()
+    assert removed_user_from_db is None, "Removed user is still in the database"
+
+    # Check that other users are still present
+    for user_data in SAMPLE_USERS:
+        if user_data["email"] != email_to_remove:
+            cursor.execute(f"SELECT * FROM {user_model.table_name} WHERE email = ?;", (user_data["email"],))
+            user_from_db = cursor.fetchone()
+            assert user_from_db is not None, f"User with email {user_data['email']} was incorrectly removed"
+    conn.close()
