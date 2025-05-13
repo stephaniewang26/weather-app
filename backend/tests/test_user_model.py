@@ -1,7 +1,11 @@
 import pytest
 import sqlite3
 import os
-from models.User_Model import User  # Corrected import
+import sys
+fpath = os.path.join(os.path.dirname(__file__), '../models') #Assumes this file lives in a tests folder next to the Models folder
+sys.path.append(fpath)
+import User_Model
+from User_Model import User
 from sample_user_data import SAMPLE_USERS
 
 # --- Test Fixture ---
