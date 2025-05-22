@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Button } from 'react-native';
+import { Link } from 'expo-router'; 
+
 
 const Home = () => {
   const [weatherData, setWeatherData] = useState(null);
@@ -9,7 +11,8 @@ const Home = () => {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const response = await fetch('http://192.168.0.135:5000/weather'); // Replace with your server IP 
+        //const response = await fetch('http://192.168.0.135:5000/weather'); // Replace with your server IP 
+        const response = await fetch('http://10.202.0.143:5000/weather');
         if (!response.ok) {
           throw new Error('Could not retrieve weather data');
         }
@@ -47,6 +50,10 @@ const Home = () => {
 
   return (
     <ScrollView style={styles.container}>
+      <View style={styles.container}>
+        <Link href="/login">LOGIN</Link>
+      </View>
+
       <Text style={styles.title}>Weather Today</Text>
 
       <Text style={styles.feelsLike}>Feels Like: {weatherData.feelsLike}°C</Text>
