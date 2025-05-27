@@ -11,8 +11,8 @@ const Home = () => {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        //const response = await fetch('http://192.168.0.135:5000/weather'); // Replace with your server IP 
-        const response = await fetch('http://10.202.0.143:5000/weather');
+        const response = await fetch('http://192.168.0.134:5000/weather'); // home
+        //const response = await fetch('http://10.202.0.143:5000/weather'); // trinity guest
         if (!response.ok) {
           throw new Error('Could not retrieve weather data');
         }

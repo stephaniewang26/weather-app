@@ -1,6 +1,7 @@
 #Stephanie Wang
 import sqlite3
 import random
+import os
 
 class User:
     def __init__(self, db_name, table_name):
@@ -297,7 +298,9 @@ if __name__ == '__main__':
             "google_oauth_token": None                     # Example: No OAuth token
         }
     ]
-    user = User(db_name="database.db", table_name="users")
+    
+    DB_location=f"{os.getcwd()}/backend/data/database.db"
+    user = User(DB_location, "users")
     user.initialize_table()
     user.create(SAMPLE_USERS[0])
     result = user.exists(email=SAMPLE_USERS[0]["email"])

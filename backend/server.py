@@ -1,19 +1,19 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS  # Import CORS
-# from controllers.User_Controller import UserController
+from controllers.User_Controller import UserController  # Import UserController
 # from controllers.Admin_Controller import AdminController
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# # Initialize controllers
-# user_controller = UserController()
+# Initialize controllers
+user_controller = UserController()
 # admin_controller = AdminController()
 
-# # --- User Routes ---
-# @app.route('/users', methods=['POST'])
-# def create_user():
-#     return user_controller.create_user()
+# --- User Routes ---
+@app.route('/users', methods=['POST'])
+def create_user():
+    return user_controller.create_user()
 
 # @app.route('/users/<int:user_id>', methods=['GET'])
 # def get_user(user_id):
@@ -97,5 +97,5 @@ def get_weather():
     return jsonify(dummy_weather_data), 200
 
 if __name__ == '__main__':
-    #app.run(debug=True, host="192.168.0.135") # home (?)
-    app.run(debug=True, host="10.202.0.143") # trinity guest
+    app.run(debug=True, host="192.168.0.134") # home 
+    #app.run(debug=True, host="10.202.0.143") # trinity guest
