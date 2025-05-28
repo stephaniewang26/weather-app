@@ -11,8 +11,7 @@ Users = User(DB_location, "users")
 class UserController:
     def create_user(self):
         print(DB_location)
-        Users.initialize_table() #you need to figre this out!!!!!! how did we do it in yahtzee
-
+        
         data = request.get_json()
         username = data.get('username')
         email = data.get('email')

@@ -1,101 +1,64 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS  # Import CORS
 from controllers.User_Controller import UserController  # Import UserController
-# from controllers.Admin_Controller import AdminController
+import requests  # Import the requests library
+import os
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Initialize controllers
 user_controller = UserController()
-# admin_controller = AdminController()
 
 # --- User Routes ---
 @app.route('/users', methods=['POST'])
 def create_user():
     return user_controller.create_user()
 
-# @app.route('/users/<int:user_id>', methods=['GET'])
-# def get_user(user_id):
-#     return user_controller.get_user(user_id)
-
-# @app.route('/users/<int:user_id>', methods=['PUT'])
-# def update_user(user_id):
-#     return user_controller.update_user(user_id)
-
-# @app.route('/users/<int:user_id>', methods=['DELETE'])
-# def delete_user(user_id):
-#     return user_controller.delete_user(user_id)
-
-# @app.route('/users', methods=['GET'])
-# def get_all_users():
-#     return user_controller.get_all_users()
-
-# @app.route('/login', methods=['POST'])
-# def login_user():
-#     return user_controller.login_user()
-
-# # --- Admin Routes ---
-# @app.route('/admins', methods=['POST'])
-# def create_admin():
-#     return admin_controller.create_admin()
-
-# @app.route('/admins/<int:admin_id>', methods=['GET'])
-# def get_admin(admin_id):
-#     return admin_controller.get_admin(admin_id)
-
-# @app.route('/admins/<int:admin_id>', methods=['PUT'])
-# def update_admin(admin_id):
-#     return admin_controller.update_admin(admin_id)
-
-# @app.route('/admins/<int:admin_id>', methods=['DELETE'])
-# def delete_admin(admin_id):
-#     return admin_controller.delete_admin(admin_id)
-
-# @app.route('/admins', methods=['GET'])
-# def get_all_admins():
-#     return admin_controller.get_all_admins()
-
-# --- Weather Data Route (Example) ---
+# --- Weather Data Route ---
 @app.route('/weather', methods=['GET'])
 def get_weather():
     """
-    Example route to simulate fetching weather data.  In a real application,
-    you would integrate with a weather API (e.g., OpenWeatherMap, AccuWeather).
-    For this example, we'll just return some dummy data.
+    Fetches weather data from the OpenWeatherMap API.
+    Requires an API key.
     """
-    dummy_weather_data = {
-        "feelsLike": 20,
-        "low": 15,
-        "high": 25,
-        "clothingRecommendation": "Wear a light jacket and jeans.",
-        "hourly": [
-            {"time": "9 AM", "temperature": 18, "icon": "☀️"},
-            {"time": "12 PM", "temperature": 22, "icon": "🌤️"},
-            {"time": "3 PM", "temperature": 24, "icon": "☀️"},
-            {"time": "6 PM", "temperature": 21, "icon": "🌥️"},
-            {"time": "9 PM", "temperature": 19, "icon": "🌙"},
-        ],
-        "daily": [
-            {"day": "Mon", "high": 23, "low": 16, "icon": "☀️"},
-            {"day": "Tue", "high": 25, "low": 18, "icon": "🌤️"},
-            {"day": "Wed", "high": 22, "low": 17, "icon": "🌧️"},
-            {"day": "Thu", "high": 20, "low": 15, "icon": "☁️"},
-            {"day": "Fri", "high": 24, "low": 19, "icon": "☀️"},
-            {"day": "Sat", "high": 26, "low": 20, "icon": "☀️"},
-            {"day": "Sun", "high": 24, "low": 18, "icon": "🌤️"},
-        ],
-        "conditions": {
-            "windSpeed": "60 mph",
-            "uvIndex": 6,
-            "humidity": "60%",
-            "airQuality": "Good",
-            "pollenCount": "Medium",
-            "description": "Sunny with a moderate breeze.",
-        },
-    }
-    return jsonify(dummy_weather_data), 200
+    api_key = "127b911f658f0da3fbb3b802caed4866"  # Replace with your actual API key
+    city = "New York"  # You can make this a request parameter
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"  # Use metric units
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for bad status codes
+
+        data = response.json()
+
+        # Extract relevant weather information
+        weather_data = {
+            "feelsLike": data["main"]["feels_like"],
+            "low": data["main"]["temp_min"],
+            "high": data["main"]["temp_max"],
+            "clothingRecommendation": "Wear something appropriate for the current temperature.",  # Customize this based on temperature
+            "hourly": [],  # You'd need a different API endpoint for hourly data
+            "daily": [],  # You'd need a different API endpoint for daily data
+            "conditions": {
+                "windSpeed": data["wind"]["speed"],
+                "humidity": data["main"]["humidity"],
+                "description": data["weather"][0]["description"],
+                "uvIndex": "N/A",  # Not directly available in this API endpoint
+                "airQuality": "N/A",  # Not directly available in this API endpoint
+                "pollenCount": "N/A",  # Not directly available in this API endpoint
+            },
+        }
+
+        return jsonify(weather_data), 200
+
+    except requests.exceptions.RequestException as e:
+        print(f"API request failed: {e}")
+        return jsonify({"error": "Failed to retrieve weather data"}), 500
+    except (KeyError, TypeError) as e:
+        print(f"Error parsing weather data: {e}")
+        return jsonify({"error": "Error processing weather data"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host="192.168.0.134") # home 
-    #app.run(debug=True, host="10.202.0.143") # trinity guest
+    #app.run(debug=True, host="192.168.0.134") # home 
+    app.run(debug=True, host="10.202.1.125") # trinity guest
