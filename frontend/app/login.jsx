@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
 import { Link } from 'expo-router'; 
+import Constants from 'expo-constants';
+
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -9,7 +11,8 @@ const Login = () => {
 
   const handleCreateUser = async () => {
     try {
-      const response = await fetch('http://192.168.0.134:5000/users', { // Replace with your server address
+      const IP_ADDRESS = process.env.EXPO_PUBLIC_IP_ADDRESS;
+      const response = await fetch(`http://${IP_ADDRESS}:5000/users`, { // Use the IP address from the environment variable
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

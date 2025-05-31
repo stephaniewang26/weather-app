@@ -26,6 +26,9 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "extra": {
+      "IP_ADDRESS": "process.env.IP_ADDRESS"
+    },
     "plugins": [
       "expo-router"
     ]

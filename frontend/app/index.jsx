@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Button } from 'react-native';
 import { Link } from 'expo-router'; 
+import Constants from 'expo-constants';
 
 
 const Home = () => {
@@ -11,8 +12,8 @@ const Home = () => {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        //const response = await fetch('http://192.168.0.134:5000/weather'); // home
-        const response = await fetch('http://10.202.1.125:5000/weather'); // trinity guest
+        const IP_ADDRESS = process.env.EXPO_PUBLIC_IP_ADDRESS;
+        const response = await fetch(`http://${IP_ADDRESS}:5000/weather`);
         if (!response.ok) {
           throw new Error('Could not retrieve weather data');
         }
