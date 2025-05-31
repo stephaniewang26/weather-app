@@ -1,6 +1,6 @@
 {
   "expo": {
-    "scheme":"weather-app",
+    "scheme": "weather-app",
     "name": "frontend",
     "slug": "frontend",
     "version": "1.0.0",
@@ -14,7 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bwuf.frontend",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,10 +31,15 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "IP_ADDRESS": "process.env.IP_ADDRESS"
+      "IP_ADDRESS": "process.env.IP_ADDRESS",
+      "router": {},
+      "eas": {
+        "projectId": "d5f5a21b-20bf-4091-b580-fa0c0e1210ad"
+      }
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "owner": "bwuf"
   }
 }

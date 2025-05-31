@@ -30,7 +30,7 @@ def get_weather():
     """
     api_key = "127b911f658f0da3fbb3b802caed4866"  # Replace with your actual API key
     city = "New York"  # You can make this a request parameter
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=imperial"  # Use metric units
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"  # Use metric units
 
     try:
         response = requests.get(url)
