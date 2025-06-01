@@ -25,7 +25,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.bwuf.frontend"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -38,7 +39,13 @@
       }
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.193142907313-j1cv80f6k7fgcki282r1d7qb3v5jkefr"
+        }
+      ]
     ],
     "owner": "bwuf"
   }

@@ -53,6 +53,7 @@ const Home = () => {
     <ScrollView style={styles.container}>
       <View style={styles.container}>
         <Link href="/login">LOGIN</Link>
+        <Link href="/google_oauth">GOOGLE OAUTH</Link>
       </View>
 
       <Text style={styles.title}>Weather Today</Text>
