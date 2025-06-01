@@ -13,9 +13,29 @@ GoogleSignin.configure({
     webClientId: WEB_CLIENT_ID, // client ID of type WEB for your server. Required to get the `idToken` on the user object, and for offline access.
     scopes: ['https://www.googleapis.com/auth/drive.readonly'], // what API you want to access on behalf of the user, default is email and profile
     offlineAccess: true, // if you want to access Google API on behalf of the user FROM YOUR SERVER
-    forceCodeForRefreshToken: false, // [Android] related to `serverAuthCode`, read the docs link below *.
+    forceCodeForRefreshToken: true, // [Android] related to `serverAuthCode`, read the docs link below *.
     iosClientId: IOS_CLIENT_ID, // [iOS] if you want to specify the client ID of type iOS (otherwise, it is taken from GoogleService-Info.plist)
 });
+
+const signIn = async () => {
+    try {
+        await GoogleSignin.hasPlayServices();
+        const userInfo = await GoogleSignin.signIn();
+        console.log(userInfo)
+    } catch (error) {
+        if (isErrorWithCode(error)) {
+        switch (error.code) {
+            case statusCodes.IN_PROGRESS:
+                console.log("something went wrong");
+                break;
+            default:
+            // some other error happened
+        }
+        } else {
+        // an error that's not related to google sign in occurred
+        }
+    }   
+};  
 
 const google_oauth = () => {
   return (
@@ -24,6 +44,7 @@ const google_oauth = () => {
         <GoogleSigninButton
         size={GoogleSigninButton.Size.Wide}
         color={GoogleSigninButton.Color.Dark}
+        onPress={signIn}
         />
     </View>
   )
