@@ -15,6 +15,7 @@ class UserController:
         data = request.get_json()
         name = data.get('name')
         email = data.get('email')
+        preference_temperature= data.get('preference_temperature')  # Default to 'neutral' if not provided
         google_oauth_token = data.get('google_oauth_token')
 
         if not name or not email:
@@ -23,7 +24,7 @@ class UserController:
         user_info = {
             "name": name,  # Assuming username is used as name
             "email": email,
-            "preference_temperature": "neutral",  # Default value
+            "preference_temperature": preference_temperature,  # Default value
             "google_oauth_token": google_oauth_token
         }
 

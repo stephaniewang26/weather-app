@@ -14,6 +14,7 @@ const Home = () => {
       try {
         const IP_ADDRESS = process.env.EXPO_PUBLIC_IP_ADDRESS;
         const response = await fetch(`http://${IP_ADDRESS}:5000/weather`);
+        //console.log(response)
         if (!response.ok) {
           throw new Error('Could not retrieve weather data');
         }
@@ -52,7 +53,6 @@ const Home = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.container}>
-        <Link href="/login">LOGIN</Link>
         <Link href="/google_oauth">GOOGLE OAUTH</Link>
       </View>
 

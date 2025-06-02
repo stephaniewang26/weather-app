@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router'; 
 import Constants from 'expo-constants';
 import {
@@ -21,12 +21,41 @@ GoogleSignin.configure({
 
 const google_oauth = () => {
     const [message, setMessage] = useState('');
+    const [selectedPreference, setSelectedPreference] = useState('');
+
+    const PreferenceSelector = () => (
+        <View style={styles.preferenceContainer}>
+            <Text style={styles.preferenceTitle}>Select your temperature preference:</Text>
+            {[
+                { label: "I get cold easily", value: "gets_cold_easily" },
+                { label: "I get hot easily", value: "gets_hot_easily" },
+                { label: "Neutral", value: "neutral" }
+            ].map((pref) => (
+                <TouchableOpacity
+                    key={pref.value}
+                    style={[
+                        styles.preferenceButton,
+                        selectedPreference === pref.value && styles.selectedButton
+                    ]}
+                    onPress={() => setSelectedPreference(pref.value)}
+                >
+                    <Text style={styles.preferenceText}>{pref.label}</Text>
+                </TouchableOpacity>
+            ))}
+        </View>
+    );
 
     const signIn = async () => {
         try {
+            if (!selectedPreference) {
+                setMessage('Please select a temperature preference');
+                return;
+            }
+
             await GoogleSignin.hasPlayServices();
             const userInfo = await GoogleSignin.signIn();
             console.log(userInfo)
+            console.log(selectedPreference)
 
             if (userInfo.type == 'success') {
                 try {
@@ -39,7 +68,7 @@ const google_oauth = () => {
                         body: JSON.stringify({
                             name: userInfo.data.user.name,
                             email: userInfo.data.user.email,
-                            preference_temperature: "neutral",
+                            preference_temperature: selectedPreference,
                             google_oauth_token: userInfo.data.idToken
                         }),
                     });
@@ -73,19 +102,49 @@ const google_oauth = () => {
 
 
     return (
-    <View>
-        <Text>google_oauth</Text>
+    <View style={styles.container}>
+        <PreferenceSelector />
         <GoogleSigninButton
-        size={GoogleSigninButton.Size.Wide}
-        color={GoogleSigninButton.Color.Dark}
-        onPress={signIn}
+            size={GoogleSigninButton.Size.Wide}
+            color={GoogleSigninButton.Color.Dark}
+            onPress={signIn}
+            disabled={!selectedPreference}
         />
-
         {message ? <Text>{message}</Text> : null}
     </View>
     )
 }
 
-export default google_oauth
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    preferenceContainer: {
+        width: '100%',
+        alignItems: 'center',
+    },
+    preferenceTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 20,
+    },
+    preferenceButton: {
+        backgroundColor: '#f0f0f0',
+        padding: 15,
+        borderRadius: 10,
+        marginVertical: 5,
+        width: '80%',
+    },
+    selectedButton: {
+        backgroundColor: '#2196F3',
+    },
+    preferenceText: {
+        textAlign: 'center',
+        fontSize: 16,
+    },
+});
 
-const styles = StyleSheet.create({})
+export default google_oauth;
