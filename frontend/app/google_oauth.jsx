@@ -1,5 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
+import React, { useState } from 'react'
+import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { Link } from 'expo-router'; 
+import Constants from 'expo-constants';
 import {
     GoogleSignin,
     GoogleSigninButton,
@@ -17,28 +19,60 @@ GoogleSignin.configure({
     iosClientId: IOS_CLIENT_ID, // [iOS] if you want to specify the client ID of type iOS (otherwise, it is taken from GoogleService-Info.plist)
 });
 
-const signIn = async () => {
-    try {
-        await GoogleSignin.hasPlayServices();
-        const userInfo = await GoogleSignin.signIn();
-        console.log(userInfo)
-    } catch (error) {
-        if (isErrorWithCode(error)) {
-        switch (error.code) {
-            case statusCodes.IN_PROGRESS:
-                console.log("something went wrong");
-                break;
-            default:
-            // some other error happened
-        }
-        } else {
-        // an error that's not related to google sign in occurred
-        }
-    }   
-};  
-
 const google_oauth = () => {
-  return (
+    const [message, setMessage] = useState('');
+
+    const signIn = async () => {
+        try {
+            await GoogleSignin.hasPlayServices();
+            const userInfo = await GoogleSignin.signIn();
+            console.log(userInfo)
+
+            if (userInfo.type == 'success') {
+                try {
+                    const IP_ADDRESS = process.env.EXPO_PUBLIC_IP_ADDRESS;
+                    const response = await fetch(`http://${IP_ADDRESS}:5000/users`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: userInfo.data.user.name,
+                            email: userInfo.data.user.email,
+                            preference_temperature: "neutral",
+                            google_oauth_token: userInfo.data.idToken
+                        }),
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        setMessage('User created successfully!');
+                        console.log("User created:", data);
+                    } else {
+                        setMessage(data.error || 'Failed to create user');
+                    }
+                } catch (error) {
+                    setMessage('Failed to connect to the server.');
+                    console.error("Server Error:", error);
+                }
+            }
+        } catch (error) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                setMessage('Sign-in cancelled by user');
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                setMessage('Sign-in in progress');
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                setMessage('Play Services not available');
+            } else {
+                setMessage('Error signing in');
+                console.error("Google Sign-In Error:", error);
+            }
+        }
+    };  
+
+
+    return (
     <View>
         <Text>google_oauth</Text>
         <GoogleSigninButton
@@ -46,8 +80,10 @@ const google_oauth = () => {
         color={GoogleSigninButton.Color.Dark}
         onPress={signIn}
         />
+
+        {message ? <Text>{message}</Text> : null}
     </View>
-  )
+    )
 }
 
 export default google_oauth

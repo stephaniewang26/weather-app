@@ -13,17 +13,18 @@ class UserController:
         print(DB_location)
         
         data = request.get_json()
-        username = data.get('username')
+        name = data.get('name')
         email = data.get('email')
+        google_oauth_token = data.get('google_oauth_token')
 
-        if not username or not email:
+        if not name or not email:
             return jsonify({'error': 'Missing required fields'}), 400
 
         user_info = {
-            "name": username,  # Assuming username is used as name
+            "name": name,  # Assuming username is used as name
             "email": email,
             "preference_temperature": "neutral",  # Default value
-            "google_oauth_token": None  # No OAuth token initially
+            "google_oauth_token": google_oauth_token
         }
 
         print(user_info)
