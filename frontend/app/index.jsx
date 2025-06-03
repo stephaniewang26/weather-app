@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from 'react-native';
-import { Link } from 'expo-router'; 
+import { Link, useRouter } from 'expo-router'; 
 import Constants from 'expo-constants';
 import {
     GoogleSignin,
@@ -21,12 +21,48 @@ GoogleSignin.configure({
 });
 
 const google_oauth = () => {
+    const router = useRouter();
     const [message, setMessage] = useState('');
     const [selectedPreference, setSelectedPreference] = useState('');
     const [isSignedIn, setIsSignedIn] = useState(false);
 
     useEffect(() => {
-        checkExistingSignIn();
+        const checkSignIn = async () => {
+            try {
+                const isSignedIn = await GoogleSignin.hasPreviousSignIn();
+                console.log("Checking previous sign in:", isSignedIn);
+                
+                if (isSignedIn) {
+                    try {
+                        // Get current user with silent sign in
+                        const userInfo = await GoogleSignin.signInSilently();
+                        console.log("Silent sign in userInfo:", userInfo);
+                        
+                        if (userInfo) {
+                            // Store user info in AsyncStorage
+                            await AsyncStorage.setItem('userEmail', userInfo.data.user.email);
+                            
+                            setIsSignedIn(true);
+                            router.replace('/home');
+                        } else {
+                            console.log("No valid user info found");
+                            await GoogleSignin.signOut();
+                            await AsyncStorage.clear();
+                        }
+                    } catch (error) {
+                        console.error("Silent sign in failed:", error);
+                        // Clear tokens and storage on error
+                        await GoogleSignin.signOut();
+                        await AsyncStorage.clear();
+                    }
+                }
+            } catch (error) {
+                console.error("Error checking sign in status:", error);
+                await AsyncStorage.clear();
+            }
+        };
+    
+        checkSignIn();
     }, []);
 
     const PreferenceSelector = () => (
@@ -50,36 +86,6 @@ const google_oauth = () => {
             ))}
         </View>
     );
-
-    const checkExistingSignIn = async () => {
-        try {
-            const isSignedIn = await GoogleSignin.hasPreviousSignIn();
-            if (isSignedIn) {
-                const userInfo = await GoogleSignin.getCurrentUser();
-                if (userInfo) {
-                    // Check if user exists in our database
-                    const IP_ADDRESS = process.env.EXPO_PUBLIC_IP_ADDRESS;
-                    const response = await fetch(`http://${IP_ADDRESS}:5000/users/exists`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            email: userInfo.user.email
-                        }),
-                    });
-
-                    if (response.ok) {
-                        setIsSignedIn(true);
-                        // Navigate to main app screen
-                        router.replace('/home');
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Error checking existing sign-in:", error);
-        }
-    };
 
     const signIn = async () => {
         try {
@@ -115,7 +121,7 @@ const google_oauth = () => {
                         setMessage('User created successfully!');
                         setIsSignedIn(true);
                         // Store user info in AsyncStorage
-                        await AsyncStorage.setItem('userEmail', userInfo.user.email);
+                        await AsyncStorage.setItem('userEmail', userInfo.data.user.email);
                         // Navigate to main app screen
                         router.replace('/home');
                     } else {

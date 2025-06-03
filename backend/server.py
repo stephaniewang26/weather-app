@@ -21,6 +21,10 @@ user_controller = UserController()
 def create_user():
     return user_controller.create_user()
 
+@app.route('/users/exists', methods=['POST'])
+def check_user_exists():
+    return user_controller.check_user_exists()
+
 # --- Weather Data Route ---
 @app.route('/weather', methods=['GET'])
 def get_weather():

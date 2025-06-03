@@ -39,6 +39,16 @@ class UserController:
                 return jsonify({'error': create_packet["data"]}), 400
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+        
+    def check_user_exists():
+        data = request.get_json()
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({"exists": False}), 400
+            
+        result = Users.exists(email=email)
+        return jsonify({"exists": result["data"]})
 
 # def users():
 #     print(f"request.url={request.url}")
