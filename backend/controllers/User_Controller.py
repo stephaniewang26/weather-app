@@ -3,6 +3,8 @@ import json
 import calendar
 import math
 import os
+import requests  # Import the requests library
+
 
 from models.User_Model import User
 DB_location=f"{os.getcwd()}/backend/data/database.db"
@@ -49,6 +51,58 @@ class UserController:
             
         result = Users.exists(email=email)
         return jsonify({"exists": result["data"]})
+    
+    def get_weather(self):
+        user_email = request.args.get('email')
+        user_preference = 'neutral'  # default
+
+        if user_email:
+            # Get user preference from database
+            user_result = Users.get(email=user_email)
+            if user_result["status"] == "success":
+                user_preference = user_result["data"]["preference_temperature"]
+
+        """
+        Fetches weather data from the OpenWeatherMap API.
+        Requires an API key.
+        """
+        api_key = "127b911f658f0da3fbb3b802caed4866"  # Replace with your actual API key
+        city = "New York"  # You can make this a request parameter
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"  # Use metric units
+
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an exception for bad status codes
+
+            data = response.json()
+
+            # Extract relevant weather information
+            weather_data = {
+                "feelsLike": round(data["main"]["feels_like"]),
+                "low": round(data["main"]["temp_min"]),
+                "high": round(data["main"]["temp_max"]),
+                "userPreference": user_preference,
+                "clothingRecommendation": "Wear something appropriate for the current temperature.",  # Customize this based on temperature
+                "hourly": [],  # You'd need a different API endpoint for hourly data
+                "daily": [],  # You'd need a different API endpoint for daily data
+                "conditions": {
+                    "windSpeed": data["wind"]["speed"],
+                    "humidity": data["main"]["humidity"],
+                    "description": data["weather"][0]["description"],
+                    "uvIndex": "N/A",  # Not directly available in this API endpoint
+                    "airQuality": "N/A",  # Not directly available in this API endpoint
+                    "pollenCount": "N/A",  # Not directly available in this API endpoint
+                },
+            }
+
+            return jsonify(weather_data), 200
+
+        except requests.exceptions.RequestException as e:
+            print(f"API request failed: {e}")
+            return jsonify({"error": "Failed to retrieve weather data"}), 500
+        except (KeyError, TypeError) as e:
+            print(f"Error parsing weather data: {e}")
+            return jsonify({"error": "Error processing weather data"}), 500
 
 # def users():
 #     print(f"request.url={request.url}")

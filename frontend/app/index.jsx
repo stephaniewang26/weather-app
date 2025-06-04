@@ -97,7 +97,6 @@ const google_oauth = () => {
             await GoogleSignin.hasPlayServices();
             const userInfo = await GoogleSignin.signIn();
             console.log(userInfo)
-            console.log(selectedPreference)
 
             if (userInfo.type == 'success') {
                 try {
