@@ -134,6 +134,16 @@ const Home = () => {
       </View>
 
       <View style={styles.clothingContainer}>
+        <Text style={[
+          styles.preferenceText, 
+          weatherData.userPreference === 'gets_cold_easily' && styles.coldPreference,
+          weatherData.userPreference === 'gets_hot_easily' && styles.hotPreference,
+          weatherData.userPreference === 'neutral' && styles.neutralPreference,
+        ]}>
+          {weatherData.userPreference === 'gets_cold_easily' ? 'You get cold easily.' :
+          weatherData.userPreference === 'gets_hot_easily' ? 'You get hot easily.' :
+          'Your temperature preference is neutral.'}
+        </Text>
         <View style={styles.recommendationList}>
           <View style={styles.recommendationItem}>
             <Text style={styles.recommendationLabel}>Top:</Text>
@@ -260,6 +270,21 @@ const styles = StyleSheet.create({
   recommendationText: {
     fontSize: 16,
     flex: 1,
+  },
+  preferenceText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'left',
+  },
+  coldPreference: {
+    color: '#1688c9',  // blue
+  },
+  hotPreference: {
+    color: '#FF5722',  // orange/red
+  },
+  neutralPreference: {
+    color: '#4CAF50',  // green
   },
 });
 

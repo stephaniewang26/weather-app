@@ -78,7 +78,7 @@ class UserController:
         # Inner top recommendations
         if adjusted_temp < 10:
             recommendation["inner_top"] = "Long sleeve thermal shirt"
-        elif adjusted_temp < 20:
+        elif adjusted_temp < 16:
             recommendation["inner_top"] = "Long sleeve shirt"
         else:
             recommendation["inner_top"] = "T-shirt"
@@ -86,19 +86,19 @@ class UserController:
         # Outerwear recommendations
         if adjusted_temp < 0:
             recommendation["outerwear"] = "Heavy winter coat"
-        elif adjusted_temp < 10:
+        elif adjusted_temp < 7:
             recommendation["outerwear"] = "Warm coat"
-        elif adjusted_temp < 15:
+        elif adjusted_temp < 10:
             recommendation["outerwear"] = "Light jacket"
-        elif adjusted_temp < 20:
+        elif adjusted_temp < 13:
             recommendation["outerwear"] = "Light sweater"
         else:
             recommendation["outerwear"] = "No outerwear needed"
 
         # Bottoms recommendations
-        if adjusted_temp < 15:
+        if adjusted_temp < 10:
             recommendation["bottoms"] = "Warm pants"
-        elif adjusted_temp < 20:
+        elif adjusted_temp < 15:
             recommendation["bottoms"] = "Regular pants"
         else:
             recommendation["bottoms"] = "Shorts or light pants"
@@ -139,7 +139,7 @@ class UserController:
             data = response.json()
             
             clothing_recommendation=self.get_clothing_recommendation(
-                data["main"]["feels_like"],
+                round(data["main"]["feels_like"]),
                 data["weather"][0]["description"],
                 user_preference
             )
