@@ -1,9 +1,18 @@
-import { Stack } from "expo-router";
+import { Stack } from 'expo-router';
+import { SafeAreaView } from 'react-native';
 
-const StackLayout = () => {
-    return(
-        <Stack>
-            <Stack.Screen name="Home"></Stack.Screen>
-        </Stack>
-    )
+export default function RootLayout() {
+  return (
+    <Stack 
+      screenOptions={{
+        headerShown: false,
+        contentStyle: {
+          paddingTop: 50,
+          backgroundColor: '#fff',
+        },
+      }}
+    >
+      <Stack.Screen name="(tabs)" />
+    </Stack>
+  );
 }

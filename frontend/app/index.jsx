@@ -66,22 +66,27 @@ const google_oauth = () => {
     }, []);
 
     const PreferenceSelector = () => (
-        <View style={styles.preferenceContainer}>
+        <View style={styles.preferenceButtons}>
             <Text style={styles.preferenceTitle}>Select your temperature preference:</Text>
             {[
-                { label: "I get cold easily", value: "gets_cold_easily" },
-                { label: "I get hot easily", value: "gets_hot_easily" },
-                { label: "Neutral", value: "neutral" }
+                { label: "I get cold easily", value: "gets_cold_easily", color: '#2196F3' },
+                { label: "I get hot easily", value: "gets_hot_easily", color: '#FF5722' },
+                { label: "Neutral", value: "neutral", color: '#666' }
             ].map((pref) => (
                 <TouchableOpacity
                     key={pref.value}
                     style={[
                         styles.preferenceButton,
-                        selectedPreference === pref.value && styles.selectedButton
+                        selectedPreference === pref.value && [styles.selectedButton, { backgroundColor: pref.color }]
                     ]}
                     onPress={() => setSelectedPreference(pref.value)}
                 >
-                    <Text style={styles.preferenceText}>{pref.label}</Text>
+                    <Text style={[
+                        styles.preferenceText,
+                        selectedPreference === pref.value && styles.selectedText
+                    ]}>
+                        {pref.label}
+                    </Text>
                 </TouchableOpacity>
             ))}
         </View>
@@ -167,28 +172,29 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 20,
     },
-    preferenceContainer: {
-        width: '100%',
-        alignItems: 'center',
-    },
     preferenceTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        marginBottom: 20,
+        marginBottom:10,
+    },
+    preferenceButtons: {
+        gap: 5,
+        width: '100%',
+        alignItems: 'center',
+        marginVertical:40,
     },
     preferenceButton: {
         backgroundColor: '#f0f0f0',
         padding: 15,
         borderRadius: 10,
-        marginVertical: 5,
-        width: '80%',
-    },
-    selectedButton: {
-        backgroundColor: '#2196F3',
+        width: '85%',  // Makes buttons wider
+        alignItems: 'center',
     },
     preferenceText: {
-        textAlign: 'center',
         fontSize: 16,
+    },
+    selectedText: {
+        color: 'white',
     },
 });
 

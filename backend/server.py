@@ -25,10 +25,19 @@ def create_user():
 def check_user_exists():
     return user_controller.check_user_exists()
 
+@app.route('/users/delete/<email>', methods=['GET'])
+def remove_user(email):
+    return user_controller.remove_user(email)
+
+@app.route('/users/preference', methods=['PUT'])
+def update_preference():
+    return user_controller.update_preference()
+
 # --- Weather Data Route ---
 @app.route('/weather', methods=['GET'])
 def get_weather():
     return user_controller.get_weather()
+
 
 if __name__ == '__main__':
     #app.run(debug=True, host="192.168.0.134") # home 

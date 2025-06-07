@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Button, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Link } from 'expo-router'; 
+import { Link, useFocusEffect } from 'expo-router'; 
 import Constants from 'expo-constants';
 
 
@@ -53,31 +53,33 @@ const Home = () => {
     return '🌤️'; // default
   };
 
-  useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        const IP_ADDRESS = process.env.EXPO_PUBLIC_IP_ADDRESS;
-        const userEmail = await AsyncStorage.getItem('userEmail');
-        console.log("Fetching weather for email:", userEmail); // Debug log
-        
-        const response = await fetch(
-          `http://${IP_ADDRESS}:5000/weather?email=${encodeURIComponent(userEmail)}`
-        );
-        
-        if (!response.ok) {
-          throw new Error('Could not retrieve weather data');
-        }
-        const data = await response.json();
-        setWeatherData(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const fetchWeather = async () => {
+    try {
+      const IP_ADDRESS = process.env.EXPO_PUBLIC_IP_ADDRESS;
+      const userEmail = await AsyncStorage.getItem('userEmail');
+      console.log("Fetching weather for email:", userEmail); // Debug log
+      
+      const response = await fetch(
+        `http://${IP_ADDRESS}:5000/weather?email=${encodeURIComponent(userEmail)}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Could not retrieve weather data');
       }
-    };
+      const data = await response.json();
+      setWeatherData(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchWeather();
-}, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchWeather();
+    }, [])
+  );
 
   if (loading) {
     return (
@@ -278,13 +280,13 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   coldPreference: {
-    color: '#1688c9',  // blue
+    color: '#2196F3',  // blue
   },
   hotPreference: {
     color: '#FF5722',  // orange/red
   },
   neutralPreference: {
-    color: '#4CAF50',  // green
+    color: '#666',
   },
 });
 

@@ -227,6 +227,43 @@ class User:
         finally:
             db_connection.close()
 
+    def update_preference(self, email, new_preference):
+        try:
+            db_connection = sqlite3.connect(self.db_name)
+            cursor = db_connection.cursor()
+            
+            # Check if user exists
+            user_exists = self.exists(email=email)
+            if not user_exists["data"]:
+                return {
+                    "status": "error",
+                    "data": "User does not exist"
+                }
+            
+            # Update preference
+            cursor.execute(f'''
+                UPDATE {self.table_name}
+                SET preference_temperature = ?
+                WHERE email = ?
+            ''', (new_preference, email))
+            
+            db_connection.commit()
+            
+            # Get updated user data
+            updated_user = self.get(email=email)
+            return {
+                "status": "success",
+                "data": updated_user["data"]
+            }
+            
+        except sqlite3.Error as error:
+            return {
+                "status": "error",
+                "data": str(error)
+            }
+        finally:
+            db_connection.close()
+
     def to_dict(self, user_tuple):
         '''Utility function which converts the tuple returned from a SQLlite3 database
            into a dictionary
