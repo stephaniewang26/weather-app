@@ -12,46 +12,7 @@ const Home = () => {
   const [isCelsius, setIsCelsius] = useState(true);
 
   const convertToF = (c) => Math.round((c * 9/5) + 32);
-  const formatTemp = (temp) => isCelsius ? `${Math.round(temp)}°C` : `${convertToF(temp)}°F`;
-
-  const getClothingRecommendation = (temp, conditions, preference = 'neutral') => {
-    const tempC = isCelsius ? temp : (temp - 32) * 5/9;
-    let recommendation = [];
-  
-    // Base layers based on temperature and user preference
-    if (preference === 'gets_cold_easily') {
-      tempC -= 3; // Adjust temp perception for cold-sensitive users
-    } else if (preference === 'gets_hot_easily') {
-      tempC += 3; // Adjust temp perception for heat-sensitive users
-    }
-  
-    // Temperature based clothing
-    if (tempC < 0) {
-      recommendation.push('Heavy winter coat', 'Scarf', 'Gloves', 'Winter hat');
-    } else if (tempC < 10) {
-      recommendation.push('Warm coat', 'Light scarf', 'Long sleeves');
-    } else if (tempC < 20) {
-      recommendation.push('Light jacket', 'Long sleeves');
-    } else if (tempC < 25) {
-      recommendation.push('T-shirt', 'Light sweater');
-    } else {
-      recommendation.push('T-shirt', 'Shorts');
-    }
-  
-    // Weather condition based items
-    if (conditions.includes('rain')) {
-      recommendation.push('Umbrella', 'Waterproof jacket');
-    }
-    if (conditions.includes('snow')) {
-      recommendation.push('Snow boots', 'Waterproof gloves');
-    }
-    if (conditions.includes('wind')) {
-      recommendation.push('Windbreaker');
-    }
-  
-    return recommendation;
-  };
-
+  const formatTemp = (temp) => isCelsius ? `${Math.round(temp)}°` : `${convertToF(temp)}°`;
 
   // Load saved temperature preference
   useEffect(() => {
@@ -80,6 +41,17 @@ const Home = () => {
     saveTempPreference();
   }, [isCelsius]);
 
+  const getWeatherEmoji = (description) => {
+    const conditions = description.toLowerCase();
+    if (conditions.includes('clear')) return '☀️';
+    if (conditions.includes('cloud')) return '☁️';
+    if (conditions.includes('rain')) return '🌧️';
+    if (conditions.includes('snow')) return '❄️';
+    if (conditions.includes('thunder')) return '⛈️';
+    if (conditions.includes('mist') || conditions.includes('fog')) return '🌫️';
+    if (conditions.includes('drizzle')) return '🌦️';
+    return '🌤️'; // default
+  };
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -129,47 +101,71 @@ const Home = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.container}>
+      {/* <View style={styles.container}>
         <Link href="/">GOOGLE OAUTH</Link>
+      </View> */}
+
+      <View style={styles.header}>
+          <Text style={styles.cityText}>{weatherData.city}</Text>
+          <TouchableOpacity 
+              style={styles.unitToggle}
+              onPress={() => setIsCelsius(!isCelsius)}
+          >
+              <Text style={styles.unitToggleText}>{isCelsius ? '°F' : '°C'}</Text>
+          </TouchableOpacity>
       </View>
 
-      <Text style={styles.title}>Weather Today</Text>
-      <TouchableOpacity 
-      style={styles.unitToggle}
-      onPress={() => setIsCelsius(!isCelsius)}
-      >
-        <Text>{isCelsius ? '°F' : '°C'}</Text>
-      </TouchableOpacity>
+      <Text style={styles.title}>Right now</Text>
+      <Text>{weatherData.conditions.description}</Text>
 
-      <Text style={styles.feelsLike}>
-        Feels Like: {formatTemp(weatherData.feelsLike)}
-      </Text>
-      <Text>
-        Low: {formatTemp(weatherData.low)} / High: {formatTemp(weatherData.high)}
-      </Text>
-
-      <Text>{weatherData.userPreference}</Text>
-      <ScrollView style={styles.container}>
-        {/* ...existing code... */}
-        
-        <View style={styles.recommendationContainer}>
-          <Text style={styles.recommendationTitle}>Recommended Clothing:</Text>
-          {getClothingRecommendation(
-            weatherData.feelsLike, 
-            weatherData.conditions,
-            weatherData.userPreference // Add this to your weather data fetch
-          ).map((item, index) => (
-            <Text key={index} style={styles.recommendationItem}>• {item}</Text>
-          ))}
+      <View style={styles.emojiFLContainer}>
+        <Text style={styles.weatherEmoji}>
+          {getWeatherEmoji(weatherData.conditions.description)}
+        </Text>
+        <View style={styles.feelsLikeContainer}>
+          <Text style={styles.feelsLikeLabel}>Feels Like</Text>
+          <Text style={styles.temperature}>
+            {formatTemp(weatherData.feelsLike)}
+          </Text>
+          <Text style={styles.lowHighLabel}>
+            L: {formatTemp(weatherData.low)}  H: {formatTemp(weatherData.high)}
+          </Text>
         </View>
-      </ScrollView>
+      </View>
 
-      <Text style={styles.sectionTitle}>Conditions</Text>
+      <View style={styles.clothingContainer}>
+        <View style={styles.recommendationList}>
+          <View style={styles.recommendationItem}>
+            <Text style={styles.recommendationLabel}>Top:</Text>
+            <Text style={styles.recommendationText}>{weatherData.clothingRecommendation.inner_top}</Text>
+          </View>
+          <View style={styles.recommendationItem}>
+            <Text style={styles.recommendationLabel}>Outerwear:</Text>
+            <Text style={styles.recommendationText}>{weatherData.clothingRecommendation.outerwear}</Text>
+          </View>
+          <View style={styles.recommendationItem}>
+            <Text style={styles.recommendationLabel}>Bottoms:</Text>
+            <Text style={styles.recommendationText}>{weatherData.clothingRecommendation.bottoms}</Text>
+          </View>
+          {weatherData.clothingRecommendation.extras.length > 0 && (
+            <View style={styles.recommendationItem}>
+              <Text style={styles.recommendationLabel}>Remember!</Text>
+              <Text style={styles.recommendationText}>
+                {weatherData.clothingRecommendation.extras.join(', ')}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      <Text style={styles.title}>Today</Text>
+
+
+      <Text style={styles.title}>Conditions</Text>
       <View style={styles.conditionsContainer}>
         <Text>Wind: {weatherData.conditions.windSpeed}</Text>
         <Text>UV Index: {weatherData.conditions.uvIndex}</Text>
         <Text>Humidity: {weatherData.conditions.humidity}</Text>
-        <Text>{weatherData.conditions.description}</Text>
       </View>
     </ScrollView>
   );
@@ -186,57 +182,84 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
-  feelsLike: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  hourlyContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  hourlyItem: {
-    alignItems: 'center',
-  },
-  dailyContainer: {
-    marginBottom: 10,
-  },
-  dailyItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
   conditionsContainer: {
     marginTop: 10,
+  },
+  emojiFLContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'left',
+    marginVertical: 20,
+  },
+  weatherEmoji: {
+    fontSize: 80,
+    marginRight: 20,
+  },
+  feelsLikeContainer: {
+    alignItems: 'left',
+  },
+  feelsLikeLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#666',
+  },
+  temperature: {
+    fontSize: 40,
+    fontWeight: 'bold',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 20,
   },
   unitToggle: {
     backgroundColor: '#f0f0f0',
     padding: 10,
     borderRadius: 5,
-    marginVertical: 10,
-    alignSelf: 'center'
+    minWidth: 40,
+    alignItems: 'center',
   },
-  recommendationContainer: {
+  headerSpacer: {
+    flex: 1,
+  },
+  unitToggleText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cityText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+    borderRadius: 5,
+  },
+  lowHighLabel: {
+    fontSize: 18,
+  },
+  clothingContainer: {
     padding: 15,
     backgroundColor: '#f5f5f5',
     borderRadius: 10,
-    margin: 10,
+    marginBottom:20,
   },
-  recommendationTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
+  recommendationList: {
+    gap: 5,
   },
   recommendationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  recommendationLabel: {
     fontSize: 16,
-    marginVertical: 2,
+    fontWeight: 'bold',
+    marginRight: 10,
+    minWidth: 90,
+  },
+  recommendationText: {
+    fontSize: 16,
+    flex: 1,
   },
 });
 

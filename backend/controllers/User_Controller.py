@@ -52,6 +52,68 @@ class UserController:
         result = Users.exists(email=email)
         return jsonify({"exists": result["data"]})
     
+    def format_description(self,desc):
+            # Capitalize first letter and add period if missing
+                formatted = desc[0].upper() + desc[1:]
+                if not formatted.endswith('.'):
+                    formatted += '.'
+                return formatted
+    
+    def get_clothing_recommendation(self,temp, conditions, user_preference):
+        # Adjust temperature based on user preference
+        adjusted_temp = temp
+        if user_preference == 'gets_cold_easily':
+            adjusted_temp -= 3
+        elif user_preference == 'gets_hot_easily':
+            adjusted_temp += 3
+
+        # Initialize recommendation dictionary
+        recommendation = {
+            "inner_top": "",
+            "outerwear": "",
+            "bottoms": "",
+            "extras": []
+        }
+
+        # Inner top recommendations
+        if adjusted_temp < 10:
+            recommendation["inner_top"] = "Long sleeve thermal shirt"
+        elif adjusted_temp < 20:
+            recommendation["inner_top"] = "Long sleeve shirt"
+        else:
+            recommendation["inner_top"] = "T-shirt"
+
+        # Outerwear recommendations
+        if adjusted_temp < 0:
+            recommendation["outerwear"] = "Heavy winter coat"
+        elif adjusted_temp < 10:
+            recommendation["outerwear"] = "Warm coat"
+        elif adjusted_temp < 15:
+            recommendation["outerwear"] = "Light jacket"
+        elif adjusted_temp < 20:
+            recommendation["outerwear"] = "Light sweater"
+        else:
+            recommendation["outerwear"] = "No outerwear needed"
+
+        # Bottoms recommendations
+        if adjusted_temp < 15:
+            recommendation["bottoms"] = "Warm pants"
+        elif adjusted_temp < 20:
+            recommendation["bottoms"] = "Regular pants"
+        else:
+            recommendation["bottoms"] = "Shorts or light pants"
+
+        # Additional items based on conditions
+        conditions_lower = conditions.lower()
+        if 'rain' in conditions_lower:
+            recommendation["extras"].extend(["Umbrella", "Waterproof jacket"])
+        if 'snow' in conditions_lower:
+            recommendation["extras"].extend(["Snow boots", "Warm socks"])
+        if 'wind' in conditions_lower:
+            recommendation["extras"].append("Windbreaker")
+
+        return recommendation
+    
     def get_weather(self):
         user_email = request.args.get('email')
         user_preference = 'neutral'  # default
@@ -67,7 +129,7 @@ class UserController:
         Requires an API key.
         """
         api_key = "127b911f658f0da3fbb3b802caed4866"  # Replace with your actual API key
-        city = "New York"  # You can make this a request parameter
+        city = "Fredericton"  # You can make this a request parameter
         url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"  # Use metric units
 
         try:
@@ -75,20 +137,27 @@ class UserController:
             response.raise_for_status()  # Raise an exception for bad status codes
 
             data = response.json()
+            
+            clothing_recommendation=self.get_clothing_recommendation(
+                data["main"]["feels_like"],
+                data["weather"][0]["description"],
+                user_preference
+            )
 
             # Extract relevant weather information
             weather_data = {
+                "city": city,
                 "feelsLike": round(data["main"]["feels_like"]),
                 "low": round(data["main"]["temp_min"]),
                 "high": round(data["main"]["temp_max"]),
                 "userPreference": user_preference,
-                "clothingRecommendation": "Wear something appropriate for the current temperature.",  # Customize this based on temperature
+                "clothingRecommendation": clothing_recommendation,
                 "hourly": [],  # You'd need a different API endpoint for hourly data
                 "daily": [],  # You'd need a different API endpoint for daily data
                 "conditions": {
                     "windSpeed": data["wind"]["speed"],
                     "humidity": data["main"]["humidity"],
-                    "description": data["weather"][0]["description"],
+                    "description": self.format_description(data["weather"][0]["description"]),
                     "uvIndex": "N/A",  # Not directly available in this API endpoint
                     "airQuality": "N/A",  # Not directly available in this API endpoint
                     "pollenCount": "N/A",  # Not directly available in this API endpoint
