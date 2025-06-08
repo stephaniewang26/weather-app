@@ -389,6 +389,7 @@ const styles = StyleSheet.create({
   },
   conditionsContainer: {
     gap: 10,
+    marginTop:10, 
     marginBottom: 30,
   },
   conditionWidget: {
