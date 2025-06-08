@@ -161,6 +161,27 @@ class UserController:
             return f"{hour}{ampm}"
         return f"{hour}:{minute}{ampm}"
     
+    def convert_wind_speed(self, speed_ms):
+        """Convert wind speed from m/s to mph"""
+        return round(speed_ms * 2.237)
+
+    def get_wind_description(self, speed_mph):
+        """Convert wind speed to human readable description"""
+        if speed_mph < 1:
+            return "Calm."
+        elif speed_mph < 8:
+            return "Light breeze."
+        elif speed_mph < 13:
+            return "Gentle breeze."
+        elif speed_mph < 19:
+            return "Moderate breeze."
+        elif speed_mph < 25:
+            return "Fresh breeze."
+        elif speed_mph < 32:
+            return "Strong breeze."
+        else:
+            return "High winds."
+    
     def get_weather(self):
         user_email = request.args.get('email')
         user_preference = 'neutral'  # default
@@ -175,7 +196,7 @@ class UserController:
         Fetches weather data from the OpenWeatherMap API.
         Requires an API key.
         """
-        city = "Fredericton"  # You can make this a request parameter
+        city = "New York"  # You can make this a request parameter
 
         try:
             current_url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"  # Use metric units
@@ -189,6 +210,8 @@ class UserController:
                 user_preference
             )
 
+            wind_speed_mph = self.convert_wind_speed(current_data["wind"]["speed"])
+
             # Extract relevant weather information
             current_weather_data = {
                 "city": city,
@@ -198,7 +221,8 @@ class UserController:
                 "userPreference": user_preference,
                 "clothingRecommendation": clothing_recommendation,
                 "conditions": {
-                    "windSpeed": current_data["wind"]["speed"],
+                    "windSpeed": wind_speed_mph,
+                    "windDescription": self.get_wind_description(wind_speed_mph),
                     "humidity": current_data["main"]["humidity"],
                     "description": self.format_description(current_data["weather"][0]["description"]),
                     "uvIndex": "N/A",  # Not directly available in this API endpoint

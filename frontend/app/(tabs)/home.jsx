@@ -257,9 +257,13 @@ const Home = () => {
 
       <Text style={styles.title}>Conditions</Text>
       <View style={styles.conditionsContainer}>
-        <Text>Wind: {currentWeatherData.conditions.windSpeed}</Text>
-        <Text>UV Index: {currentWeatherData.conditions.uvIndex}</Text>
-        <Text>Humidity: {currentWeatherData.conditions.humidity}</Text>
+        <View style={styles.conditionWidget}>
+          <Text style={styles.conditionIcon}>💨</Text>
+          <View style={styles.conditionDetails}>
+            <Text style={styles.conditionValue}>{currentWeatherData.conditions.windSpeed} mph</Text>
+            <Text style={styles.conditionDescription}>{currentWeatherData.conditions.windDescription}</Text>
+          </View>
+        </View>
       </View>
     </ScrollView>
   );
@@ -382,6 +386,32 @@ const styles = StyleSheet.create({
   },
   hourlyTime: {
       fontSize: 12,
+  },
+  conditionsContainer: {
+    gap: 10,
+    marginBottom: 30,
+  },
+  conditionWidget: {
+    backgroundColor: '#f5f5f5',
+    padding: 15,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  conditionIcon: {
+    fontSize: 24,
+    marginRight: 15,
+  },
+  conditionDetails: {
+    flex: 1,
+  },
+  conditionValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  conditionDescription: {
+    color: '#666',
+    fontSize: 14,
   },
 });
 
