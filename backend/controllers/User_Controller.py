@@ -4,6 +4,13 @@ import calendar
 import math
 import os
 import requests  # Import the requests library
+from dotenv import load_dotenv, dotenv_values
+from datetime import datetime
+import pytz
+
+dotenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..','frontend', '.env')
+load_dotenv(dotenv_path=dotenv_path)  # Load environment variables from .env file
+API_KEY = os.getenv("API_KEY") # Get the environment variable
 
 
 from models.User_Model import User
@@ -106,13 +113,46 @@ class UserController:
         # Additional items based on conditions
         conditions_lower = conditions.lower()
         if 'rain' in conditions_lower:
-            recommendation["extras"].extend(["Umbrella", "Waterproof jacket"])
+            recommendation["extras"].extend(["Umbrella"])
         if 'snow' in conditions_lower:
             recommendation["extras"].extend(["Snow boots", "Warm socks"])
         if 'wind' in conditions_lower:
             recommendation["extras"].append("Windbreaker")
 
         return recommendation
+    
+    def get_coordinates(self, city):
+        """Get latitude and longitude for a city using OpenWeatherMap Geocoding API"""
+        geocoding_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={API_KEY}"
+        
+        try:
+            response = requests.get(geocoding_url)
+            response.raise_for_status()
+            data = response.json()
+            
+            if data:
+                return {
+                    "lat": data[0]["lat"],
+                    "lon": data[0]["lon"]
+                }
+            return None
+        except Exception as e:
+            print(f"Geocoding error: {e}")
+            return None
+        
+    def convert_utc_to_est(self, utc_time_str):
+        # Convert string to datetime object
+        utc_time = datetime.strptime(utc_time_str, '%Y-%m-%d %H:%M:%S')
+        
+        # Set UTC timezone
+        utc_time = utc_time.replace(tzinfo=pytz.UTC)
+        
+        # Convert to EST
+        est_tz = pytz.timezone('America/New_York')
+        est_time = utc_time.astimezone(est_tz)
+        
+        # Format time as 12-hour with AM/PM
+        return est_time.strftime('%I:%M %p')
     
     def get_weather(self):
         user_email = request.args.get('email')
@@ -128,43 +168,67 @@ class UserController:
         Fetches weather data from the OpenWeatherMap API.
         Requires an API key.
         """
-        api_key = "127b911f658f0da3fbb3b802caed4866"  # Replace with your actual API key
         city = "Fredericton"  # You can make this a request parameter
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"  # Use metric units
 
         try:
-            response = requests.get(url)
-            response.raise_for_status()  # Raise an exception for bad status codes
-
-            data = response.json()
+            current_url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"  # Use metric units
+            current_response = requests.get(current_url)
+            current_response.raise_for_status()  # Raise an exception for bad status codes
+            current_data = current_response.json()
             
             clothing_recommendation=self.get_clothing_recommendation(
-                round(data["main"]["feels_like"]),
-                data["weather"][0]["description"],
+                round(current_data["main"]["feels_like"]),
+                current_data["weather"][0]["description"],
                 user_preference
             )
 
             # Extract relevant weather information
-            weather_data = {
+            current_weather_data = {
                 "city": city,
-                "feelsLike": round(data["main"]["feels_like"]),
-                "low": round(data["main"]["temp_min"]),
-                "high": round(data["main"]["temp_max"]),
+                "feelsLike": round(current_data["main"]["feels_like"]),
+                "low": round(current_data["main"]["temp_min"]),
+                "high": round(current_data["main"]["temp_max"]),
                 "userPreference": user_preference,
                 "clothingRecommendation": clothing_recommendation,
-                "hourly": [],  # You'd need a different API endpoint for hourly data
-                "daily": [],  # You'd need a different API endpoint for daily data
                 "conditions": {
-                    "windSpeed": data["wind"]["speed"],
-                    "humidity": data["main"]["humidity"],
-                    "description": self.format_description(data["weather"][0]["description"]),
+                    "windSpeed": current_data["wind"]["speed"],
+                    "humidity": current_data["main"]["humidity"],
+                    "description": self.format_description(current_data["weather"][0]["description"]),
                     "uvIndex": "N/A",  # Not directly available in this API endpoint
                     "airQuality": "N/A",  # Not directly available in this API endpoint
                     "pollenCount": "N/A",  # Not directly available in this API endpoint
                 },
             }
 
-            return jsonify(weather_data), 200
+            #FOR THE DAY ------------------------
+            coords = self.get_coordinates(city)
+            if not coords:
+                return jsonify({"error": "Could not get coordinates for city"}), 500
+
+            forecast_url = f"http://api.openweathermap.org/data/2.5/forecast?lat={coords['lat']}&lon={coords['lon']}&appid={API_KEY}&units=metric"
+            forecast_response = requests.get(forecast_url)
+            forecast_response.raise_for_status()
+            forecast_data = forecast_response.json()
+
+            hourly_forecast = []
+            for entry in forecast_data['list'][:8]:
+                hourly_forecast.append({
+                    "time": self.convert_utc_to_est(entry['dt_txt']),
+                    "feelsLike": round(entry['main']['feels_like']),
+                    "temp": round(entry['main']['temp']),
+                    "description": self.format_description(entry['weather'][0]['description'])
+                })
+
+            hourly_forecast_data = {
+                "hourly_forecast_list": hourly_forecast,
+            }
+
+            combined_data={
+                "current_weather_data": current_weather_data,
+                "hourly_forecast_data": hourly_forecast_data
+            }
+
+            return jsonify(combined_data), 200
 
         except requests.exceptions.RequestException as e:
             print(f"API request failed: {e}")

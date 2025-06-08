@@ -1,18 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Button, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Button, TouchableOpacity, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Link, useFocusEffect } from 'expo-router'; 
 import Constants from 'expo-constants';
+import Svg, { Path, Circle, Line } from 'react-native-svg';
 
 
 const Home = () => {
-  const [weatherData, setWeatherData] = useState(null);
+  const [currentWeatherData, setCurrentWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCelsius, setIsCelsius] = useState(true);
+  const [hourlyForecast, setHourlyForecast] = useState([]);
 
   const convertToF = (c) => Math.round((c * 9/5) + 32);
   const formatTemp = (temp) => isCelsius ? `${Math.round(temp)}°` : `${convertToF(temp)}°`;
+
+  const HourlyForecast = ({ data, width, height, isCelsius }) => {
+    const temps = data.map(h => h.feelsLike);
+    const minTemp = Math.min(...temps);
+    const maxTemp = Math.max(...temps);
+    const tempRange = maxTemp - minTemp;
+    
+    const points = data.map((hour, i) => ({
+      x: (width - 40) * (i / (data.length - 1)) + 20,
+      y: height - (((hour.feelsLike - minTemp) / tempRange) * (height - 60)) - 30
+    }));
+  
+    const linePath = points.map((point, i) => 
+      (i === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`)
+    ).join(' ');
+  
+    return (
+      <View style={styles.forecastContainer}>
+        <Svg width={width} height={height}>
+          <Path
+            d={linePath}
+            stroke="#2196F3"
+            strokeWidth="2"
+            fill="none"
+          />
+          {points.map((point, i) => (
+            <Circle
+              key={i}
+              cx={point.x}
+              cy={point.y}
+              r="4"
+              fill="#2196F3"
+            />
+          ))}
+        </Svg>
+        <View style={styles.hourlyLabels}>
+          {data.map((hour, index) => (
+            <View key={index} style={[styles.hourlyItem, { width: (width - 40) / data.length }]}>
+              <Text style={styles.hourlyTime}>{hour.time}</Text>
+              <Text style={styles.hourlyWeatherEmoji}>{getWeatherEmoji(hour.description)}</Text>
+              <Text style={styles.hourlyTemp}>{formatTemp(hour.feelsLike)}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
 
   // Load saved temperature preference
   useEffect(() => {
@@ -66,8 +115,11 @@ const Home = () => {
       if (!response.ok) {
         throw new Error('Could not retrieve weather data');
       }
+
       const data = await response.json();
-      setWeatherData(data);
+      console.log(data.hourly_forecast_data);
+      setCurrentWeatherData(data.current_weather_data);
+      setHourlyForecast(data.hourly_forecast_data.hourly_forecast_list);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -97,7 +149,7 @@ const Home = () => {
     );
   }
 
-  if (!weatherData) {
+  if (!currentWeatherData) {
     return null; // Or a more informative placeholder
   }
 
@@ -108,7 +160,7 @@ const Home = () => {
       </View> */}
 
       <View style={styles.header}>
-          <Text style={styles.cityText}>{weatherData.city}</Text>
+          <Text style={styles.cityText}>{currentWeatherData.city}</Text>
           <TouchableOpacity 
               style={styles.unitToggle}
               onPress={() => setIsCelsius(!isCelsius)}
@@ -118,19 +170,19 @@ const Home = () => {
       </View>
 
       <Text style={styles.title}>Right now</Text>
-      <Text>{weatherData.conditions.description}</Text>
+      <Text>{currentWeatherData.conditions.description}</Text>
 
       <View style={styles.emojiFLContainer}>
         <Text style={styles.weatherEmoji}>
-          {getWeatherEmoji(weatherData.conditions.description)}
+          {getWeatherEmoji(currentWeatherData.conditions.description)}
         </Text>
         <View style={styles.feelsLikeContainer}>
           <Text style={styles.feelsLikeLabel}>Feels Like</Text>
           <Text style={styles.temperature}>
-            {formatTemp(weatherData.feelsLike)}
+            {formatTemp(currentWeatherData.feelsLike)}
           </Text>
           <Text style={styles.lowHighLabel}>
-            L: {formatTemp(weatherData.low)}  H: {formatTemp(weatherData.high)}
+            L: {formatTemp(currentWeatherData.low)}  H: {formatTemp(currentWeatherData.high)}
           </Text>
         </View>
       </View>
@@ -138,32 +190,32 @@ const Home = () => {
       <View style={styles.clothingContainer}>
         <Text style={[
           styles.preferenceText, 
-          weatherData.userPreference === 'gets_cold_easily' && styles.coldPreference,
-          weatherData.userPreference === 'gets_hot_easily' && styles.hotPreference,
-          weatherData.userPreference === 'neutral' && styles.neutralPreference,
+          currentWeatherData.userPreference === 'gets_cold_easily' && styles.coldPreference,
+          currentWeatherData.userPreference === 'gets_hot_easily' && styles.hotPreference,
+          currentWeatherData.userPreference === 'neutral' && styles.neutralPreference,
         ]}>
-          {weatherData.userPreference === 'gets_cold_easily' ? 'You get cold easily.' :
-          weatherData.userPreference === 'gets_hot_easily' ? 'You get hot easily.' :
+          {currentWeatherData.userPreference === 'gets_cold_easily' ? 'You get cold easily.' :
+          currentWeatherData.userPreference === 'gets_hot_easily' ? 'You get hot easily.' :
           'Your temperature preference is neutral.'}
         </Text>
         <View style={styles.recommendationList}>
           <View style={styles.recommendationItem}>
             <Text style={styles.recommendationLabel}>Top:</Text>
-            <Text style={styles.recommendationText}>{weatherData.clothingRecommendation.inner_top}</Text>
+            <Text style={styles.recommendationText}>{currentWeatherData.clothingRecommendation.inner_top}</Text>
           </View>
           <View style={styles.recommendationItem}>
             <Text style={styles.recommendationLabel}>Outerwear:</Text>
-            <Text style={styles.recommendationText}>{weatherData.clothingRecommendation.outerwear}</Text>
+            <Text style={styles.recommendationText}>{currentWeatherData.clothingRecommendation.outerwear}</Text>
           </View>
           <View style={styles.recommendationItem}>
             <Text style={styles.recommendationLabel}>Bottoms:</Text>
-            <Text style={styles.recommendationText}>{weatherData.clothingRecommendation.bottoms}</Text>
+            <Text style={styles.recommendationText}>{currentWeatherData.clothingRecommendation.bottoms}</Text>
           </View>
-          {weatherData.clothingRecommendation.extras.length > 0 && (
+          {currentWeatherData.clothingRecommendation.extras.length > 0 && (
             <View style={styles.recommendationItem}>
               <Text style={styles.recommendationLabel}>Remember!</Text>
               <Text style={styles.recommendationText}>
-                {weatherData.clothingRecommendation.extras.join(', ')}
+                {currentWeatherData.clothingRecommendation.extras.join(', ')}
               </Text>
             </View>
           )}
@@ -171,13 +223,19 @@ const Home = () => {
       </View>
 
       <Text style={styles.title}>Today</Text>
+      <HourlyForecast 
+        data={hourlyForecast} 
+        width={Dimensions.get('window').width - 40}
+        height={200}
+        isCelsius={isCelsius}
+      />
 
 
       <Text style={styles.title}>Conditions</Text>
       <View style={styles.conditionsContainer}>
-        <Text>Wind: {weatherData.conditions.windSpeed}</Text>
-        <Text>UV Index: {weatherData.conditions.uvIndex}</Text>
-        <Text>Humidity: {weatherData.conditions.humidity}</Text>
+        <Text>Wind: {currentWeatherData.conditions.windSpeed}</Text>
+        <Text>UV Index: {currentWeatherData.conditions.uvIndex}</Text>
+        <Text>Humidity: {currentWeatherData.conditions.humidity}</Text>
       </View>
     </ScrollView>
   );
@@ -288,6 +346,32 @@ const styles = StyleSheet.create({
   neutralPreference: {
     color: '#666',
   },
+  hourlyContainer: {
+    marginBottom: 20,
+  },forecastContainer: {
+    marginVertical: 20,
+    alignItems: 'center',
+  },
+  hourlyLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  hourlyItem: {
+    alignItems: 'center',
+  },
+  hourlyTime: {
+    fontSize: 12,
+  },
+  hourlyTemp: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  hourlyWeatherEmoji: {
+    fontSize: 20,
+    marginVertical: 4,
+  }
 });
 
 export default Home;
