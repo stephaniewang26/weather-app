@@ -151,8 +151,15 @@ class UserController:
         est_tz = pytz.timezone('America/New_York')
         est_time = utc_time.astimezone(est_tz)
         
-        # Format time as 12-hour with AM/PM
-        return est_time.strftime('%I:%M %p')
+        # Get hour and minute
+        hour = int(est_time.strftime('%I'))  # Remove leading zero
+        minute = est_time.strftime('%M')
+        ampm = est_time.strftime('%p')
+        
+        # Return just hour + AM/PM if minute is 00
+        if minute == '00':
+            return f"{hour}{ampm}"
+        return f"{hour}:{minute}{ampm}"
     
     def get_weather(self):
         user_email = request.args.get('email')

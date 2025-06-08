@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Button, TouchableOpacity, Dimension
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Link, useFocusEffect } from 'expo-router'; 
 import Constants from 'expo-constants';
-import Svg, { Path, Circle, Line } from 'react-native-svg';
+import Svg, { Path, Circle, Line, Rect, TSpan, Text as SvgText } from 'react-native-svg';
 
 
 const Home = () => {
@@ -18,13 +18,15 @@ const Home = () => {
 
   const HourlyForecast = ({ data, width, height, isCelsius }) => {
     const temps = data.map(h => h.feelsLike);
-    const minTemp = Math.min(...temps);
-    const maxTemp = Math.max(...temps);
+    const minTemp = Math.min(...temps) - 2;
+    const maxTemp = Math.max(...temps) + 2;
     const tempRange = maxTemp - minTemp;
+    const graphWidth = Math.max(width, data.length * 80);
     
+    // Adjust x-coordinate calculation to start from left
     const points = data.map((hour, i) => ({
-      x: (width - 40) * (i / (data.length - 1)) + 20,
-      y: height - (((hour.feelsLike - minTemp) / tempRange) * (height - 60)) - 30
+      x: (i * 80) + 40,  // Fixed width per point
+      y: height - 40 - ((hour.feelsLike - minTemp) / tempRange * (height - 80))
     }));
   
     const linePath = points.map((point, i) => 
@@ -32,34 +34,56 @@ const Home = () => {
     ).join(' ');
   
     return (
-      <View style={styles.forecastContainer}>
-        <Svg width={width} height={height}>
-          <Path
-            d={linePath}
-            stroke="#2196F3"
-            strokeWidth="2"
-            fill="none"
-          />
-          {points.map((point, i) => (
-            <Circle
-              key={i}
-              cx={point.x}
-              cy={point.y}
-              r="4"
-              fill="#2196F3"
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.forecastScroll}
+      >
+        <View style={styles.forecastContainer}>
+          <View style={[styles.hourlyLabels, { width: graphWidth }]}>
+            {data.map((hour, index) => (
+              <View key={index} style={styles.hourlyItem}>
+                <Text style={styles.hourlyTime}>{hour.time}</Text>
+              </View>
+            ))}
+          </View>
+          <Svg width={graphWidth} height={height}>
+            <Path
+              d={linePath}
+              stroke="#2196F3"
+              strokeWidth="2"
+              fill="none"
             />
-          ))}
-        </Svg>
-        <View style={styles.hourlyLabels}>
-          {data.map((hour, index) => (
-            <View key={index} style={[styles.hourlyItem, { width: (width - 40) / data.length }]}>
-              <Text style={styles.hourlyTime}>{hour.time}</Text>
-              <Text style={styles.hourlyWeatherEmoji}>{getWeatherEmoji(hour.description)}</Text>
-              <Text style={styles.hourlyTemp}>{formatTemp(hour.feelsLike)}</Text>
-            </View>
-          ))}
+            {points.map((point, i) => (
+              <React.Fragment key={i}>
+                <Circle
+                  cx={point.x}
+                  cy={point.y}
+                  r="12"
+                  fill="white"
+                />
+                <SvgText
+                  x={point.x}
+                  y={point.y + 4}
+                  fill="#000"
+                  fontSize="12"
+                  textAnchor="middle"
+                >
+                  {formatTemp(data[i].feelsLike)}
+                </SvgText>
+                <SvgText
+                  x={point.x}
+                  y={point.y - 20}
+                  fontSize="16"
+                  textAnchor="middle"
+                >
+                  {getWeatherEmoji(data[i].description)}
+                </SvgText>
+              </React.Fragment>
+            ))}
+          </Svg>
         </View>
-      </View>
+      </ScrollView>
     );
   };
 
@@ -226,7 +250,7 @@ const Home = () => {
       <HourlyForecast 
         data={hourlyForecast} 
         width={Dimensions.get('window').width - 40}
-        height={200}
+        height={150}
         isCelsius={isCelsius}
       />
 
@@ -346,32 +370,19 @@ const styles = StyleSheet.create({
   neutralPreference: {
     color: '#666',
   },
-  hourlyContainer: {
-    marginBottom: 20,
-  },forecastContainer: {
-    marginVertical: 20,
-    alignItems: 'center',
+  forecastScroll: {
+    marginTop: 20,
   },
   hourlyLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 20,
+      flexDirection: 'row',
   },
   hourlyItem: {
-    alignItems: 'center',
+      alignItems: 'center',
+      width: 80,
   },
   hourlyTime: {
-    fontSize: 12,
+      fontSize: 12,
   },
-  hourlyTemp: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  hourlyWeatherEmoji: {
-    fontSize: 20,
-    marginVertical: 4,
-  }
 });
 
 export default Home;
