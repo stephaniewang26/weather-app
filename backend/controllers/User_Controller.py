@@ -66,7 +66,14 @@ class UserController:
                     formatted += '.'
                 return formatted
     
-    def get_clothing_recommendation(self,temp, conditions, user_preference):
+    def check_future_rain(self, forecast_data):
+        """Check if rain is predicted in next 6 hours"""
+        for entry in forecast_data['list'][:2]:  # First 2 entries = 6 hours
+            if 'rain' in entry['weather'][0]['description'].lower():
+                return True
+        return False
+    
+    def get_clothing_recommendation(self,temp, conditions, user_preference, will_rain):
         # Adjust temperature based on user preference
         adjusted_temp = temp
         if user_preference == 'gets_cold_easily':
@@ -79,7 +86,8 @@ class UserController:
             "inner_top": "",
             "outerwear": "",
             "bottoms": "",
-            "extras": []
+            "extras": [],
+            "future_rain" : ""
         }
 
         # Inner top recommendations
@@ -118,6 +126,9 @@ class UserController:
             recommendation["extras"].extend(["Snow boots", "Warm socks"])
         if 'wind' in conditions_lower:
             recommendation["extras"].append("Windbreaker")
+
+        if will_rain and 'rain' not in conditions.lower():
+            recommendation["future_rain"] = "Rain expected in the next 6 hours!"
 
         return recommendation
     
@@ -199,38 +210,6 @@ class UserController:
         city = "New York"  # You can make this a request parameter
 
         try:
-            current_url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"  # Use metric units
-            current_response = requests.get(current_url)
-            current_response.raise_for_status()  # Raise an exception for bad status codes
-            current_data = current_response.json()
-            
-            clothing_recommendation=self.get_clothing_recommendation(
-                round(current_data["main"]["feels_like"]),
-                current_data["weather"][0]["description"],
-                user_preference
-            )
-
-            wind_speed_mph = self.convert_wind_speed(current_data["wind"]["speed"])
-
-            # Extract relevant weather information
-            current_weather_data = {
-                "city": city,
-                "feelsLike": round(current_data["main"]["feels_like"]),
-                "low": round(current_data["main"]["temp_min"]),
-                "high": round(current_data["main"]["temp_max"]),
-                "userPreference": user_preference,
-                "clothingRecommendation": clothing_recommendation,
-                "conditions": {
-                    "windSpeed": wind_speed_mph,
-                    "windDescription": self.get_wind_description(wind_speed_mph),
-                    "humidity": current_data["main"]["humidity"],
-                    "description": self.format_description(current_data["weather"][0]["description"]),
-                    "uvIndex": "N/A",  # Not directly available in this API endpoint
-                    "airQuality": "N/A",  # Not directly available in this API endpoint
-                    "pollenCount": "N/A",  # Not directly available in this API endpoint
-                },
-            }
-
             #FOR THE DAY ------------------------
             coords = self.get_coordinates(city)
             if not coords:
@@ -252,6 +231,42 @@ class UserController:
 
             hourly_forecast_data = {
                 "hourly_forecast_list": hourly_forecast,
+            }
+
+            will_rain = self.check_future_rain(forecast_data)
+
+            # CURRENT  ------------------------
+            current_url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"  # Use metric units
+            current_response = requests.get(current_url)
+            current_response.raise_for_status()  # Raise an exception for bad status codes
+            current_data = current_response.json()
+
+            wind_speed_mph = self.convert_wind_speed(current_data["wind"]["speed"])
+
+            clothing_recommendation = self.get_clothing_recommendation(
+                current_data["main"]["feels_like"],
+                current_data["weather"][0]["description"],
+                user_preference,
+                will_rain
+            )
+
+            # Extract relevant weather information
+            current_weather_data = {
+                "city": city,
+                "feelsLike": round(current_data["main"]["feels_like"]),
+                "low": round(current_data["main"]["temp_min"]),
+                "high": round(current_data["main"]["temp_max"]),
+                "userPreference": user_preference,
+                "clothingRecommendation": clothing_recommendation,
+                "conditions": {
+                    "windSpeed": wind_speed_mph,
+                    "windDescription": self.get_wind_description(wind_speed_mph),
+                    "humidity": current_data["main"]["humidity"],
+                    "description": self.format_description(current_data["weather"][0]["description"]),
+                    "uvIndex": "N/A",  # Not directly available in this API endpoint
+                    "airQuality": "N/A",  # Not directly available in this API endpoint
+                    "pollenCount": "N/A",  # Not directly available in this API endpoint
+                },
             }
 
             combined_data={

@@ -243,6 +243,14 @@ const Home = () => {
               </Text>
             </View>
           )}
+          {currentWeatherData.clothingRecommendation.future_rain != "" && currentWeatherData.clothingRecommendation.extras.length == 0 && (
+            <View style={styles.recommendationItem}>
+              <Text style={[styles.recommendationLabel, styles.warningLabel]}>Warning!</Text>
+              <Text style={[styles.recommendationText, styles.warningText]}>
+                Rain expected in the next 6 hours!
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -414,6 +422,13 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
   },
+  warningLabel: {
+    color: '#FF3B30',
+  },
+  warningText: {
+    color: '#FF3B30',
+    fontWeight: '500',
+  }
 });
 
 export default Home;
